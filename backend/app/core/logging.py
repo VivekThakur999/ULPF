@@ -28,6 +28,8 @@ def configure_logging(level: str = "INFO") -> None:
     root.setLevel(level.upper())
     # Quiet noisy libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    logging.getLogger("python_multipart").setLevel(logging.WARNING)
+    logging.getLogger("multipart").setLevel(logging.WARNING)
     _CONFIGURED = True
 
 

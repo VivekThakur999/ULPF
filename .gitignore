@@ -34,3 +34,4 @@ htmlcov/
 # Uploads / runtime data
 backend/uploads/
 backend/data/
+*.tsbuildinfo

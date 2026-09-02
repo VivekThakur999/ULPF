@@ -2,7 +2,6 @@ import { NavLink, Outlet } from "react-router-dom";
 import {
   Activity,
   AlertTriangle,
-  BarChart3,
   Bug,
   Database,
   FileStack,
@@ -23,7 +22,6 @@ const NAV = [
   { to: "/explorer", label: "Log Explorer", icon: Search },
   { to: "/debugger", label: "Pipeline Debugger", icon: Bug },
   { to: "/alerts", label: "Alerts", icon: AlertTriangle },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/parsers", label: "Parser Packs", icon: Package },
   { to: "/privacy", label: "Privacy", icon: ShieldCheck },
   { to: "/compression", label: "Compression", icon: Waypoints },

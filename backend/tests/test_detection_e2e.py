@@ -37,10 +37,15 @@ def test_events_normalize_to_one_schema_across_sources(scenario_loaded):
     assert {"firewall", "linux", "application", "windows"} <= sources
     # every event has the same schema version and shape
     assert all(e["schema_version"] == "1.0" for e in items)
-    # the attacker IP is one pseudonym everywhere it appears
-    ips = {e["source_ip"] for e in items if e["source_ip"]}
-    assert len(ips) == 1
-    assert next(iter(ips)).startswith("IP_")
+    # the attacker IP is one pseudonym everywhere it appears - check via the
+    # pseudonymized-search path so the assertion is scoped to this scenario.
+    tok = client.get("/api/logs/pseudonymize?value=192.168.1.50&kind=ip", headers=headers).json()
+    attacker = tok["pseudonym"]
+    assert attacker.startswith("IP_")
+    for src in ("firewall", "linux", "application", "windows"):
+        hits = client.get(f"/api/logs?source={src}&source_ip={attacker}&limit=50",
+                          headers=headers).json()
+        assert hits["total"] >= 1, f"attacker pseudonym not found in {src}"
 
 
 def test_search_pseudonymizes_raw_ip_query(scenario_loaded):

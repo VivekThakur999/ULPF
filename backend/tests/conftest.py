@@ -27,6 +27,9 @@ def _prepare_db():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     bootstrap()
+    from app.services.parsing.loader import load_all_parsers
+
+    load_all_parsers()
     yield
     try:
         os.unlink(_tmp.name)

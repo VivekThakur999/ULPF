@@ -1,0 +1,39 @@
+parser:
+  name: postgresql
+  version: 1.0.0
+  format: POSTGRESQL
+  schema_version: "1.0"
+  specificity: 5
+  description: PostgreSQL server log (default log_line_prefix '%m [%p] %q%u@%d ')
+
+detect:
+  hints:
+    - '\[\d+\]\s+(?:LOG|ERROR|FATAL|WARNING|STATEMENT):\s'
+    - '\bpostgres\b.*\bdatabase\b'
+
+patterns:
+  - '^(?P<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(?:\.\d+)?\s[A-Z]{2,4})\s+\[(?P<pid>\d+)\]\s+(?:(?P<username>\w+)@(?P<database>\w+)\s+)?(?P<level>LOG|ERROR|FATAL|PANIC|WARNING|DETAIL|STATEMENT|HINT):\s+(?P<message>.*)$'
+
+field_mappings:
+  level: severity
+  database: db_name
+
+transformations:
+  service: { type: const, value: postgresql }
+  process: { type: const, value: postgres }
+
+event_type:
+  default: generic
+
+aliases:
+  level: severity
+
+tests:
+  - input: '2025-09-02 09:15:04.123 UTC [4821] app_user@appdb FATAL:  password authentication failed for user "app_user"'
+    expect:
+      username: 'app_user'
+      db_name: 'appdb'
+      severity: 'FATAL'
+  - input: '2025-09-02 09:16:10.001 UTC [4822] LOG:  connection received: host=10.20.0.31 port=51820'
+    expect:
+      severity: 'LOG'

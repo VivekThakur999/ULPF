@@ -34,6 +34,14 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         log.warning("Bootstrap skipped/failed: %s", exc)
 
+    # Register declarative parser packs (disk + DB).
+    try:
+        from app.services.parsing.loader import load_all_parsers
+
+        load_all_parsers()
+    except Exception as exc:  # pragma: no cover
+        log.warning("Parser pack loading failed: %s", exc)
+
     yield
 
 

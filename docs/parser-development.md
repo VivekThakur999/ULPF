@@ -52,10 +52,16 @@ No Python is executed.
 
 ## WASM custom parsers
 
-For formats a regex pack cannot express, compile a parser to WebAssembly exporting
-`parse(ptr,len) -> ptr` over a simple JSON ABI. It runs in a sandbox with no
-filesystem/network access and hard CPU/memory/time limits. See
-`backend/app/services/wasm/`.
+For formats a regex pack cannot express, compile a parser to WebAssembly. The
+module exports `memory`, `alloc(i32)->i32` and `ulpf_parse(i32,i32)->i64` (packed
+`out_ptr<<32 | out_len`); it receives the raw line's bytes and returns a JSON
+object of flat string fields. It runs under `wasmtime` with **no WASI**
+(no filesystem/clock/env/network), fuel + epoch-timeout + memory limits, and is
+rejected if it imports anything. Full contract, ABI, the hand-written PoC parser
+and the honest limitations are in [wasm-sandbox.md](wasm-sandbox.md).
+
+Register via `POST /api/parsers` with `parser.kind: wasm` and a `wat:` (or
+`wasm_base64:`) field — versioned like any other pack.
 
 ## Testing a parser
 

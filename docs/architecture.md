@@ -65,9 +65,32 @@ reference their raw log for full-provenance investigation.
 
 ## 5. Repository layer & search
 
-All DB access goes through `repositories/`. `EventRepository` exposes a
-`search(filter: EventQuery)` method backed by SQL today; an `OpenSearchEventRepository`
-can be dropped in later without touching services or the API.
+All event queries go through `repositories/events.py`. `EventRepository` exposes
+`search(EventQuery) -> EventPage`, `facets`, `timeseries` (dialect-aware) and
+`get`, backed by SQL today; an `OpenSearchEventRepository` can be dropped in
+later without touching services or the API.
+
+## 5a. Parsers: three tiers
+
+1. **Built-in** (`services/parsing/parsers/`) — Python, in code, for the common
+   formats; provide match spans for the debugger.
+2. **Declarative packs** (`services/parsing/declarative.py` + `parser_packs/*.yaml`
+   + DB `parser_packs`/`parser_versions`) — pure data: hints, named-group
+   regexes, field mappings, a fixed transform whitelist, `kv_expand`, embedded
+   self-tests. No pack code runs.
+3. **WASM** (`services/wasm/`) — a compiled module runs the extraction under
+   `wasmtime` with no WASI and fuel/timeout/memory limits. See
+   [wasm-sandbox.md](wasm-sandbox.md).
+
+All three implement the same `BaseParser` interface and emit the same
+`UniversalLogEvent`. The registry picks the best parser by `can_parse` score,
+breaking ties by `specificity`.
+
+## 5b. Dashboard
+
+`GET /api/analytics/overview` aggregates **only** real rows: `raw_logs` status
+counts, `normalized_events` facets, `processing_jobs.processing_rate`,
+`security_alerts` by band, `security_events`. No metric is hard-coded.
 
 ## 6. Security model
 

@@ -61,11 +61,27 @@ RBAC: `VIEWER < ANALYST < ADMIN`. "Requires ANALYST" means analyst **or** admin.
 | GET | `/api/alerts/{id}` | any | alert + transparent risk breakdown + incident timeline + related events |
 | PUT | `/api/alerts/{id}` | ANALYST | status workflow (NEW/ACKNOWLEDGED/INVESTIGATING/RESOLVED/FALSE_POSITIVE) + note (audited) |
 
+### Dashboard analytics (Module 25)
+| GET | `/api/analytics/overview` | any | top cards + 9 chart datasets + source status — all from live DB counts |
+| GET | `/api/analytics/timeline` | any | bucketed event-count series (`?bucket=hour&hours=`) |
+
+### Parsers & packs (Module 20)
+| GET | `/api/parsers` | any | every registered parser (builtin + declarative pack + WASM) |
+| GET | `/api/parsers/{name}` | any | metadata + definition (packs) + embedded-test report |
+| GET | `/api/parsers/{name}/versions` | any | version history (packs only) |
+| POST | `/api/parsers/validate` | any | dry-run validate a YAML pack (regex compile + run its tests) |
+| POST | `/api/parsers` | ADMIN | create/version a pack — validates, runs embedded tests, hot-registers (audited); rejects shadowing a built-in |
+| POST | `/api/parsers/{name}/test` | any | run a parser against a sample line |
+
+### WASM sandbox (Module 21)
+| GET | `/api/wasm/status` | any | runtime availability + isolation summary + limits |
+| POST | `/api/wasm/validate` | ADMIN | static-check a `wat`/`wasm_base64` module |
+| POST | `/api/wasm/run` | ADMIN | run a module against one line, sandboxed + fuel/timeout/memory limited |
+
 ## Planned (later checkpoints)
 
-`/api/analytics/overview` (dashboard aggregates), `/api/pipeline/debug` (interactive
-debugger), `/api/parsers*`, `/api/ai/explain`, `/api/compression/stats`,
-`/api/response/simulate`, `/api/templates*`.
+`/api/ai/explain` (offline log explanation), `/api/compression/stats`,
+`/api/response/simulate`, `/api/templates*`, `/api/demo/load`.
 
 Each returns `422` with a Pydantic error list on invalid input, `401` when
 unauthenticated, `403` when the role is insufficient.

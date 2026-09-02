@@ -263,3 +263,117 @@ export interface SecurityRule {
 export const listRules = () => api.get<SecurityRule[]>("/detection/rules").then((r) => r.data);
 export const updateRule = (key: string, body: Partial<SecurityRule>) =>
   api.put<SecurityRule>(`/detection/rules/${key}`, body).then((r) => r.data);
+
+// --- analytics / dashboard ---
+export interface Series {
+  label: string;
+  value: number;
+}
+export interface AnalyticsOverview {
+  cards: {
+    total_logs: number;
+    processed: number;
+    invalid: number;
+    duplicates: number;
+    quarantined: number;
+    normalized_events: number;
+    alerts: number;
+    avg_processing_rate: number;
+    peak_processing_rate: number;
+  };
+  charts: {
+    logs_by_source: Series[];
+    logs_by_format: Series[];
+    events_by_severity: Series[];
+    events_by_type: Series[];
+    events_over_time: { bucket: string; count: number }[];
+    processing_outcomes: Series[];
+    pii_transformations: Series[];
+    alerts_by_severity: Series[];
+    risk_distribution: Series[];
+  };
+  processing_success_rate: number;
+  shield_events: number;
+  source_status: {
+    name: string;
+    category: string;
+    adapter: string;
+    status: string;
+    events_processed: number;
+    last_received: string | null;
+    configured: boolean;
+  }[];
+  generated_at: string;
+}
+export const analyticsOverview = () =>
+  api.get<AnalyticsOverview>("/analytics/overview").then((r) => r.data);
+
+// --- parsers ---
+export interface ParserInfo {
+  name: string;
+  version: string;
+  format: string;
+  description: string;
+  kind: string;
+  schema_version: string;
+  specificity: number;
+  pattern_count?: number;
+  field_mappings?: Record<string, string>;
+  limits?: { fuel: number; timeout_ms: number; max_memory_bytes: number };
+}
+export interface ParserTestReport {
+  total: number;
+  passed: number;
+  results: { index: number; input: string; ok: boolean; mismatches: Record<string, unknown>; fields: Record<string, unknown> }[];
+}
+export const listParsers = () =>
+  api.get<{ parsers: ParserInfo[] }>("/parsers").then((r) => r.data.parsers);
+export const getParser = (name: string) =>
+  api
+    .get<ParserInfo & { definition?: Record<string, unknown>; tests?: ParserTestReport }>(
+      `/parsers/${name}`,
+    )
+    .then((r) => r.data);
+export const parserVersions = (name: string) =>
+  api
+    .get<{ name: string; latest_version: string; versions: { version: string; is_active: boolean; created_at: string; tests_passed: number | null }[] }>(
+      `/parsers/${name}/versions`,
+    )
+    .then((r) => r.data);
+export const testParser = (name: string, sample: string) =>
+  api
+    .post<{ parser: string; can_parse: number; fields: Record<string, unknown>; confidence: number; event_type: string | null; match_spans: { field: string; start: number; end: number; text: string }[]; errors: string[]; partial: boolean; tests?: ParserTestReport }>(
+      `/parsers/${name}/test`,
+      { sample },
+    )
+    .then((r) => r.data);
+export const validateParserPack = (yaml_text: string) =>
+  api
+    .post<{ valid: boolean; problems: string[]; tests: ParserTestReport; metadata: ParserInfo }>(
+      "/parsers/validate",
+      { yaml_text },
+    )
+    .then((r) => r.data);
+export const createParserPack = (yaml_text: string, author?: string) =>
+  api
+    .post<{ name: string; version: string; tests: ParserTestReport; registered: boolean }>(
+      "/parsers",
+      { yaml_text, author },
+    )
+    .then((r) => r.data);
+
+// --- wasm ---
+export interface WasmStatus {
+  available: boolean;
+  runtime: string | null;
+  defaults: Record<string, number>;
+  isolation: string[];
+}
+export const wasmStatus = () => api.get<WasmStatus>("/wasm/status").then((r) => r.data);
+export const wasmRun = (wat: string, input: string) =>
+  api
+    .post<{ output: unknown; fuel_consumed: number; duration_ms: number; memory_bytes: number }>(
+      "/wasm/run",
+      { wat, input },
+    )
+    .then((r) => r.data);

@@ -7,6 +7,17 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          recharts: ["recharts"],
+          vendor: ["react", "react-dom", "react-router-dom", "@tanstack/react-query", "axios"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
   server: {
     port: 5173,
     host: true,

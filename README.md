@@ -119,6 +119,7 @@ walks through the full workflow including the brute-force attack scenario (attac
 - [docs/parser-development.md](docs/parser-development.md)
 - [docs/deployment.md](docs/deployment.md)
 - [docs/security-model.md](docs/security-model.md)
+- [docs/wasm-sandbox.md](docs/wasm-sandbox.md)
 - [docs/demo.md](docs/demo.md)
 
 ## Build status (phase-by-phase)
@@ -129,7 +130,7 @@ walks through the full workflow including the brute-force attack scenario (attac
 | 3–5 | Universal schema, pipeline context, ingestion + jobs, format detection, 7 parsers | ✅ done |
 | 6–8 | Cleaning + validation, field extraction, normalization, deterministic PII, security shield | ✅ done |
 | 9–10 | Log Explorer + search, cross-source correlation, 8 detection rules, transparent risk scoring, alerts, incident timeline | ✅ done |
-| 11–13 | Dashboard, Live Pipeline Debugger, parser packs + versioning, WASM PoC | ⏳ planned |
+| 11–13 | Live analytics Dashboard, Live Pipeline Debugger, declarative parser packs + versioning, sandboxed WASM parser (PoC) | ✅ done |
 | 14–24 | Templates/compression, offline AI, response simulator, tests, perf, polish, demo mode | ⏳ planned |
 
 ## Future scope

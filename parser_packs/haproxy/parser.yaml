@@ -1,0 +1,38 @@
+parser:
+  name: haproxy
+  version: 1.0.0
+  format: HAPROXY_HTTP
+  schema_version: "1.0"
+  specificity: 5
+  description: HAProxy HTTP-mode access log (default httplog format)
+
+detect:
+  hints:
+    - '\shaproxy\[\d+\]:\s'
+    - '\s\d+/\d+/\d+/\d+/\d+\s\d{3}\s\d+\s'
+
+patterns:
+  - '^(?P<syslog_ts>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s+(?P<host>\S+)\s+haproxy\[(?P<pid>\d+)\]:\s+(?P<source_ip>[\da-fA-F.:]+):(?P<source_port>\d+)\s+\[(?P<timestamp>[^\]]+)\]\s+(?P<frontend>\S+)\s+(?P<backend>\S+)/(?P<server>\S+)\s+(?P<tq>-?\d+)/(?P<tw>-?\d+)/(?P<tc>-?\d+)/(?P<tr>-?\d+)/(?P<tt>\+?\d+)\s+(?P<response_code>\d{3})\s+(?P<bytes>\+?\d+)\s+\S+\s+\S+\s+(?P<termination>[\w-]+)\s+\d+/\d+/\d+/\d+/\d+\s+\d+/\d+\s+"(?P<http_method>[A-Z]+)\s+(?P<url>\S+)\s+(?P<http_version>[^"]+)"'
+
+field_mappings:
+  frontend: service
+  bytes: response_bytes
+
+transformations:
+  response_code: int
+  source_port: int
+  timestamp: { type: strptime, format: "%d/%b/%Y:%H:%M:%S.%f" }
+  protocol: { type: const, value: tcp }
+
+event_type:
+  default: http_request
+
+tests:
+  - input: 'Sep  2 10:15:03 lb-01 haproxy[2213]: 203.0.113.44:51000 [02/Sep/2025:10:15:03.221] fe_http be_api/web-03 12/0/1/4/17 401 173 - - ---- 8/8/0/0/0 0/0 "POST /api/login HTTP/1.1"'
+    expect:
+      source_ip: '203.0.113.44'
+      source_port: 51000
+      response_code: 401
+      http_method: 'POST'
+      url: '/api/login'
+      service: 'fe_http'

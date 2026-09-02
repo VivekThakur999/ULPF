@@ -1,45 +1,141 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { AlertTriangle, Database, FileWarning, Files, Layers, ShieldX, Zap } from "lucide-react";
+import { analyticsOverview } from "@/services/endpoints";
 import { useAuth } from "@/hooks/useAuth";
-
-interface Health {
-  status: string;
-  version: string;
-  environment: string;
-  database: string;
-}
+import { Badge, ErrorState, PageHeader, Spinner } from "@/components/ui";
+import { BarSeries, ChartCard, DonutSeries, TimeSeries } from "@/components/charts";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["health"],
-    queryFn: async () => (await axios.get<Health>("/health")).data,
-    refetchInterval: 15000,
+  const q = useQuery({
+    queryKey: ["analytics-overview"],
+    queryFn: analyticsOverview,
+    refetchInterval: 10000,
   });
+
+  if (q.isLoading) return <Spinner label="Loading dashboard…" />;
+  if (q.isError) return <ErrorState error={q.error} />;
+  const d = q.data!;
+
+  const cards = [
+    { label: "Total Logs", value: d.cards.total_logs, icon: Files },
+    { label: "Processed", value: d.cards.processed, icon: Layers },
+    { label: "Invalid", value: d.cards.invalid, icon: FileWarning },
+    { label: "Duplicates", value: d.cards.duplicates, icon: Files },
+    { label: "Quarantined", value: d.cards.quarantined, icon: ShieldX },
+    { label: "Normalized Events", value: d.cards.normalized_events, icon: Database },
+    { label: "Alerts", value: d.cards.alerts, icon: AlertTriangle },
+    {
+      label: "Processing Rate",
+      value: `${d.cards.avg_processing_rate.toFixed(0)}/s`,
+      sub: `peak ${d.cards.peak_processing_rate.toFixed(0)}/s`,
+      icon: Zap,
+    },
+  ];
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold">Dashboard</h1>
-      <p className="mb-6 text-sm text-gray-400">
-        Signed in as {user?.email} ({user?.role}). Full metrics dashboard arrives in Phase 14 -
-        the tiles below reflect real backend state only.
-      </p>
+      <PageHeader
+        title="Dashboard"
+        subtitle={`Signed in as ${user?.email} (${user?.role}). Every number below is queried live from the backend — nothing is hard-coded.`}
+        actions={
+          <span className="text-xs text-gray-500">
+            updated {new Date(d.generated_at).toLocaleTimeString()}
+          </span>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile label="Backend" value={isLoading ? "…" : isError ? "unreachable" : data?.status ?? "?"} />
-        <Tile label="Database" value={isLoading ? "…" : isError ? "?" : data?.database ?? "?"} />
-        <Tile label="API version" value={data?.version ?? "—"} />
-        <Tile label="Environment" value={data?.environment ?? "—"} />
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map((c) => (
+          <div key={c.label} className="card">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wide text-gray-400">{c.label}</span>
+              <c.icon className="h-4 w-4 text-gray-600" />
+            </div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums">{c.value}</div>
+            {c.sub && <div className="text-xs text-gray-500">{c.sub}</div>}
+          </div>
+        ))}
       </div>
-    </div>
-  );
-}
 
-function Tile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card">
-      <div className="text-xs uppercase tracking-wide text-gray-400">{label}</div>
-      <div className="mt-1 text-lg font-semibold capitalize">{value}</div>
+      <div className="mb-3 flex flex-wrap gap-4 text-xs text-gray-400">
+        <span>
+          Processing success rate:{" "}
+          <span className="font-semibold text-gray-200">{d.processing_success_rate}%</span>
+        </span>
+        <span>
+          Security-shield events:{" "}
+          <span className="font-semibold text-gray-200">{d.shield_events}</span>
+        </span>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <ChartCard title="Events over time">
+          <TimeSeries data={d.charts.events_over_time} />
+        </ChartCard>
+        <ChartCard title="Logs by source">
+          <BarSeries data={d.charts.logs_by_source} />
+        </ChartCard>
+        <ChartCard title="Logs by format">
+          <BarSeries data={d.charts.logs_by_format} />
+        </ChartCard>
+        <ChartCard title="Events by severity">
+          <DonutSeries data={d.charts.events_by_severity} />
+        </ChartCard>
+        <ChartCard title="Events by type">
+          <BarSeries data={d.charts.events_by_type} />
+        </ChartCard>
+        <ChartCard title="Processing outcomes">
+          <DonutSeries data={d.charts.processing_outcomes} />
+        </ChartCard>
+        <ChartCard title="PII transformations">
+          <DonutSeries data={d.charts.pii_transformations} />
+        </ChartCard>
+        <ChartCard title="Alerts by severity">
+          <BarSeries data={d.charts.alerts_by_severity} colorByLabel />
+        </ChartCard>
+        <ChartCard title="Risk distribution">
+          <BarSeries data={d.charts.risk_distribution} colorByLabel />
+        </ChartCard>
+      </div>
+
+      <h2 className="mb-2 mt-8 text-sm font-semibold text-gray-300">Source status</h2>
+      {d.source_status.length === 0 ? (
+        <p className="text-sm text-gray-500">
+          No sources yet — upload a file or import a sample on the Ingestion page.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs uppercase text-gray-500">
+              <tr>
+                <th className="py-2 pr-4">Source</th>
+                <th className="py-2 pr-4">Category</th>
+                <th className="py-2 pr-4">Adapter</th>
+                <th className="py-2 pr-4">Status</th>
+                <th className="py-2 pr-4">Events</th>
+                <th className="py-2 pr-4">Last received</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.source_status.map((s) => (
+                <tr key={s.name} className="border-t border-base-border">
+                  <td className="py-2 pr-4 font-medium">{s.name}</td>
+                  <td className="py-2 pr-4 text-gray-400">{s.category}</td>
+                  <td className="py-2 pr-4">{s.adapter}</td>
+                  <td className="py-2 pr-4">
+                    <Badge tone={s.status === "RECEIVING" ? "green" : "slate"}>{s.status}</Badge>
+                  </td>
+                  <td className="py-2 pr-4 tabular-nums">{s.events_processed}</td>
+                  <td className="py-2 pr-4 text-gray-400">
+                    {s.last_received ? new Date(s.last_received).toLocaleString() : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

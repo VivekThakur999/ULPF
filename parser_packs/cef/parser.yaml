@@ -1,0 +1,48 @@
+parser:
+  name: cef
+  version: 1.0.0
+  format: CEF
+  schema_version: "1.0"
+  specificity: 5
+  description: ArcSight Common Event Format (CEF:0|Vendor|Product|Version|SigID|Name|Sev|ext)
+
+detect:
+  hints:
+    - 'CEF:\d\|'
+
+patterns:
+  - '^(?:(?P<syslog_ts>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s+(?P<host>\S+)\s+)?CEF:\d\|(?P<vendor>[^|]*)\|(?P<product>[^|]*)\|(?P<product_version>[^|]*)\|(?P<signature_id>[^|]*)\|(?P<name>[^|]*)\|(?P<cef_severity>[^|]*)\|(?P<extension>.*)$'
+
+field_mappings:
+  product: service
+  name: message
+
+transformations:
+  cef_severity: strip
+
+event_type:
+  default: generic
+
+# CEF extension is a "key=value key2=value2" blob; kv_expand splits it using the
+# aliases below (still pure data - just a tokenizer, no code execution).
+kv_expand: extension
+aliases:
+  src: source_ip
+  dst: destination_ip
+  spt: source_port
+  dpt: destination_port
+  suser: username
+  duser: username
+  act: action
+  proto: protocol
+
+tests:
+  - input: 'Sep  2 09:02:10 siem CEF:0|Vendor|IDS|1.0|1001|SSH brute force detected|8|src=192.168.1.50 dst=10.20.0.20 spt=44208 dpt=22 act=blocked proto=TCP'
+    expect:
+      vendor: 'Vendor'
+      service: 'IDS'
+      signature_id: '1001'
+      message: 'SSH brute force detected'
+      source_ip: '192.168.1.50'
+      destination_port: '22'
+      action: 'blocked'
