@@ -8,11 +8,34 @@ from __future__ import annotations
 
 import ipaddress
 import re
+from datetime import datetime, timezone
 from typing import Any
 
+from dateutil import parser as _dateparser
+
 _WS = re.compile(r"\s+")
-_IP_FIELDS = ("source_ip", "destination_ip", "src_ip", "dst_ip", "ip")
-_PORT_FIELDS = ("source_port", "destination_port", "src_port", "dst_port", "port", "spt", "dpt")
+_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_IP_FIELDS = ("source_ip", "destination_ip", "src_ip", "dst_ip", "ip", "ipaddress",
+              "client_ip", "remote_addr")
+_PORT_FIELDS = ("source_port", "destination_port", "src_port", "dst_port", "port",
+                "spt", "dpt", "sport", "dport", "ipport")
+_TS_FIELDS = ("timestamp", "time", "ts", "date", "datetime", "@timestamp", "eventtime",
+              "timecreated", "event_time")
+
+
+def _valid_timestamp(value: Any) -> bool:
+    if isinstance(value, datetime):
+        return True
+    s = str(value).strip()
+    if not s:
+        return False
+    if s.replace(".", "", 1).isdigit() and len(s.split(".")[0]) in (10, 13):
+        return True
+    try:
+        _dateparser.parse(s, default=datetime(2000, 1, 1, tzinfo=timezone.utc))
+        return True
+    except (ValueError, OverflowError, TypeError):
+        return False
 
 
 def _clean_ws(value: str) -> str:
@@ -49,6 +72,9 @@ def clean_fields(
             continue
 
         if isinstance(value, str):
+            if _CTRL.search(value):
+                value = _CTRL.sub("", value)
+                transforms.append({"type": "strip_control_chars", "field": key})
             stripped = value.strip()
             if stripped == "":
                 continue
@@ -62,6 +88,12 @@ def clean_fields(
                 transforms.append({"type": "unquote", "field": key})
 
         low = key.lower()
+
+        if low in _TS_FIELDS and not _valid_timestamp(value):
+            warnings.append(f"{key}: '{value}' is not a parseable timestamp")
+            cleaned[f"{key}_raw"] = value
+            had_invalid = True
+            continue
 
         if low in _IP_FIELDS and isinstance(value, str):
             if not valid_ip(value):

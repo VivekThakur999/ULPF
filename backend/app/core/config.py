@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     pii_hmac_key: str = Field(default="dev-only-pii-key-change-me")
     pii_default_mode: str = Field(default="DETERMINISTIC_HASH")  # OFF | MASK | DETERMINISTIC_HASH
 
+    # --- Security shield ---
+    # quarantine lines whose only findings are SUSPICIOUS injection indicators
+    # (WEAPONIZED_LOG is always quarantined regardless of this flag)
+    shield_quarantine_suspicious: bool = Field(default=True)
+
     # --- Ingestion limits ---
     max_upload_bytes: int = 50 * 1024 * 1024  # 50 MB
     allowed_upload_extensions: List[str] = Field(

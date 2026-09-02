@@ -6,6 +6,7 @@ import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import SourcesPage from "@/pages/SourcesPage";
 import IngestionPage from "@/pages/IngestionPage";
+import PrivacyPage from "@/pages/PrivacyPage";
 
 export default function App() {
   return (
@@ -26,7 +27,7 @@ export default function App() {
         <Route path="alerts" element={<Placeholder title="Alerts" phase="Phase 13" />} />
         <Route path="analytics" element={<Placeholder title="Analytics" phase="Phase 14" />} />
         <Route path="parsers" element={<Placeholder title="Parser Packs" phase="Phase 16" />} />
-        <Route path="privacy" element={<Placeholder title="Privacy Configuration" phase="Phase 8" />} />
+        <Route path="privacy" element={<PrivacyPage />} />
         <Route path="compression" element={<Placeholder title="Compression" phase="Phase 18" />} />
         <Route path="response" element={<Placeholder title="Response Simulator" phase="Phase 20" />} />
         <Route path="assistant" element={<Placeholder title="AI Assistant" phase="Phase 19" />} />

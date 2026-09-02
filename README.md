@@ -125,9 +125,12 @@ walks through the full workflow including the brute-force attack scenario (attac
 
 | Phase | Scope | Status |
 |------:|-------|--------|
-| 1 | Architecture, repo, Docker, FastAPI + React + DB running | ✅ done |
-| 2 | DB models, auth, RBAC, audit log | 🚧 in progress |
-| 3–24 | Universal schema → pipeline → analytics → debugger → polish | ⏳ planned |
+| 1–2 | Architecture, repo, Docker, FastAPI + React + DB, auth, RBAC, audit log | ✅ done |
+| 3–5 | Universal schema, pipeline context, ingestion + jobs, format detection, 7 parsers | ✅ done |
+| 6–8 | Cleaning + validation, field extraction, normalization, deterministic PII, security shield | ✅ done |
+| 9–10 | Log Explorer + search, cross-source correlation, detection rules, risk scoring, alerts, timeline | ⏳ next |
+| 11–13 | Dashboard, Live Pipeline Debugger, parser packs + versioning, WASM PoC | ⏳ planned |
+| 14–24 | Templates/compression, offline AI, response simulator, tests, perf, polish, demo mode | ⏳ planned |
 
 ## Future scope
 

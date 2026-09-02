@@ -31,10 +31,14 @@ class SecurityShieldStage(PipelineStage):
     name = "security_shield"
 
     def run(self, ctx: PipelineContext, result: StageResult) -> None:
+        from app.core.config import settings
         from app.services.security.shield import screen_line
 
         result.input = ctx.raw_line
-        verdict = screen_line(ctx.raw_line)
+        verdict = screen_line(
+            ctx.raw_line,
+            quarantine_injection=settings.shield_quarantine_suspicious,
+        )
         ctx.security_verdict = verdict.verdict
         ctx.security_indicators = verdict.indicators
         result.output = verdict.verdict

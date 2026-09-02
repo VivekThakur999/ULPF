@@ -10,8 +10,10 @@ from typing import Any
 
 _EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
 _IPV4 = re.compile(r"\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b")
+_IPV6 = re.compile(r"\b(?:[0-9A-Fa-f]{1,4}:){2,7}[0-9A-Fa-f]{1,4}\b")
 _MAC = re.compile(r"\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b")
 _URL = re.compile(r"\bhttps?://[^\s\"'<>]+")
+_REQ_ID = re.compile(r"\b(?:request|req|trace|correlation|session)[_-]?id[=:\s\"]+([A-Za-z0-9\-]{6,})")
 
 _PARSED_CONF = 0.95  # confidence for a value the parser extracted directly
 
@@ -41,8 +43,8 @@ def extract_supplementary(
             confidence["email"] = 0.8
             found.append("email")
 
-    if "source_ip" not in out and "src_ip" not in out:
-        ips = _IPV4.findall(raw_line)
+    if "source_ip" not in out and "src_ip" not in out and "ipaddress" not in out:
+        ips = _IPV4.findall(raw_line) or _IPV6.findall(raw_line)
         if ips:
             out["source_ip"] = ips[0]
             confidence["source_ip"] = 0.6
@@ -51,6 +53,13 @@ def extract_supplementary(
                 out["destination_ip"] = ips[1]
                 confidence["destination_ip"] = 0.45
                 found.append("destination_ip")
+
+    if "request_id" not in out:
+        m = _REQ_ID.search(raw_line)
+        if m:
+            out["request_id"] = m.group(1)
+            confidence["request_id"] = 0.75
+            found.append("request_id")
 
     if "url" not in out:
         m = _URL.search(text)
