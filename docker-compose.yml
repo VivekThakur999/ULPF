@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ulpf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ulpf}
+      POSTGRES_DB: ${POSTGRES_DB:-ulpf}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ulpf}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-true}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-ulpf}:${POSTGRES_PASSWORD:-ulpf}@db:5432/${POSTGRES_DB:-ulpf}
+      SECRET_KEY: ${SECRET_KEY:-CHANGE_ME_dev_only_insecure}
+      PII_HMAC_KEY: ${PII_HMAC_KEY:-CHANGE_ME_dev_only_pii_key}
+      PII_DEFAULT_MODE: ${PII_DEFAULT_MODE:-DETERMINISTIC_HASH}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+      FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-admin@ulpf.io}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-ChangeMe!123}
+      AI_PROVIDER: ${AI_PROVIDER:-local_template}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
+  uploads:
