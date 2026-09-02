@@ -1,0 +1,6 @@
+<34>Sep  2 07:00:00 gw-01 systemd[1]: Started Daily apt download activities.
+<86>Sep  2 07:00:01 gw-01 CRON[9931]: (root) CMD (test -x /usr/sbin/anacron || anacron -s)
+<13>Sep  2 08:20:11 app-07 myapp[3321]: config reloaded from /etc/myapp/conf.d
+<11>Sep  2 09:33:02 app-07 myapp[3321]: database connection pool exhausted, retrying
+<38>Sep  2 10:05:44 gw-01 dhclient[701]: DHCPACK of 10.20.0.14 from 10.20.0.1
+<190>Sep  2 12:15:00 app-07 myapp[3321]: request completed status=200 path=/v1/health

@@ -1,0 +1,10 @@
+Sep  2 09:02:11 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44210 ssh2
+
+Sep  2 09:02:11 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44210 ssh2
+Sep 32 99:99:99 db-02 sshd[4412]: Failed password for admin from 999.1.1.1 port 999999 ssh2
+{"ts":"not-a-real-date","level":"weird","msg":"half a json record"
+this line has     irregular      whitespace    and no structure at all
+Sep  2 09:02:20 db-02 sshd[4413]: pam_unix(sshd:auth): authentication failure; rhost= user=
+203.0.113.44 - - [bad timestamp] "GET /x HTTP/1.1" 200 -
+
+Sep  2 09:03:00 db-02 kernel: SRC=10.0.0.1 DST= PROTO= SPT= DPT=

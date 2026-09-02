@@ -1,0 +1,14 @@
+Sep  2 08:14:02 web-01 sshd[20413]: Accepted password for jdoe from 10.20.0.14 port 51522 ssh2
+Sep  2 08:14:02 web-01 sshd[20413]: pam_unix(sshd:session): session opened for user jdoe by (uid=0)
+Sep  2 08:31:44 web-01 sudo:    jdoe : TTY=pts/0 ; PWD=/home/jdoe ; USER=root ; COMMAND=/usr/bin/apt update
+Sep  2 09:02:11 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44210 ssh2
+Sep  2 09:02:13 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44212 ssh2
+Sep  2 09:02:15 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44215 ssh2
+Sep  2 09:02:17 db-02 sshd[4413]: Failed password for invalid user oracle from 192.168.1.50 port 44221 ssh2
+Sep  2 09:02:20 db-02 sshd[4413]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=192.168.1.50 user=admin
+Sep  2 09:05:41 db-02 sshd[4460]: Accepted password for backup-svc from 10.20.0.9 port 40122 ssh2
+Sep  2 10:15:07 web-01 sshd[20890]: Invalid user test from 203.0.113.44 port 51000
+Sep  2 10:15:09 web-01 sshd[20890]: Failed password for invalid user test from 203.0.113.44 port 51000 ssh2
+Sep  2 11:44:55 web-01 sshd[21550]: Accepted publickey for jdoe from 10.20.0.14 port 51999 ssh2
+Sep  2 12:00:01 db-02 CRON[5001]: pam_unix(cron:session): session opened for user root by (uid=0)
+Sep  2 12:00:02 db-02 CRON[5001]: pam_unix(cron:session): session closed for user root

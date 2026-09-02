@@ -1,0 +1,3 @@
+{"TimeCreated":"2025-09-02T09:01:59Z","EventID":4625,"Channel":"Security","Computer":"WIN-DC01","event":"authentication_failure","TargetUserName":"Administrator","IpAddress":"192.168.1.50","IpPort":44207,"LogonType":3,"message":"An account failed to log on"}
+{"TimeCreated":"2025-09-02T09:02:07Z","EventID":4625,"Channel":"Security","Computer":"WIN-DC01","event":"authentication_failure","TargetUserName":"Administrator","IpAddress":"192.168.1.50","IpPort":44213,"LogonType":3,"message":"An account failed to log on"}
+{"TimeCreated":"2025-09-02T09:02:22Z","EventID":4740,"Channel":"Security","Computer":"WIN-DC01","event":"account_locked","TargetUserName":"Administrator","IpAddress":"192.168.1.50","message":"A user account was locked out"}

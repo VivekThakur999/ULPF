@@ -1,0 +1,9 @@
+Sep  2 09:02:10 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44208 ssh2
+Sep  2 09:02:12 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44210 ssh2
+Sep  2 09:02:15 db-02 sshd[4412]: Failed password for admin from 192.168.1.50 port 44215 ssh2
+Sep  2 09:02:17 db-02 sshd[4413]: Failed password for invalid user oracle from 192.168.1.50 port 44221 ssh2
+Sep  2 09:02:18 db-02 sshd[4413]: Failed password for admin from 192.168.1.50 port 44224 ssh2
+Sep  2 09:02:20 db-02 sshd[4413]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=192.168.1.50 user=admin
+Sep  2 09:03:05 web-01 sshd[20991]: Failed password for admin from 192.168.1.50 port 45001 ssh2
+Sep  2 09:03:09 web-01 sshd[20991]: Failed password for admin from 192.168.1.50 port 45005 ssh2
+Sep  2 09:06:00 db-02 sshd[4480]: Accepted password for admin from 192.168.1.50 port 46010 ssh2

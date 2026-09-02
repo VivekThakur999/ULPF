@@ -1,0 +1,6 @@
+{"ts":"2025-09-02T08:15:04Z","level":"info","logger":"auth-svc","event":"login_success","user":"jdoe","src_ip":"10.20.0.14","msg":"user authenticated via SSO"}
+{"ts":"2025-09-02T09:02:12Z","level":"warning","logger":"auth-svc","event":"login_failed","user":"admin","src_ip":"192.168.1.50","reason":"bad_password","msg":"authentication failure for admin"}
+{"ts":"2025-09-02T09:02:16Z","level":"warning","logger":"auth-svc","event":"login_failed","user":"admin","src_ip":"192.168.1.50","reason":"bad_password","msg":"authentication failure for admin"}
+{"ts":"2025-09-02T09:02:19Z","level":"error","logger":"auth-svc","event":"account_locked","user":"admin","src_ip":"192.168.1.50","msg":"account admin locked after repeated failures"}
+{"ts":"2025-09-02T11:02:41Z","level":"error","logger":"ticket-api","event":"unhandled_exception","user":"alice","src_ip":"10.20.0.31","path":"/api/v1/tickets/8841","status":500,"msg":"NullPointerException in TicketService.update"}
+{"ts":"2025-09-02T12:00:00Z","level":"debug","logger":"scheduler","event":"job_run","job":"nightly-report","msg":"scheduled job started"}

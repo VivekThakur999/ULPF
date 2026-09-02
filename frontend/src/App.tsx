@@ -4,6 +4,8 @@ import Placeholder from "@/components/Placeholder";
 import AppLayout from "@/layouts/AppLayout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
+import SourcesPage from "@/pages/SourcesPage";
+import IngestionPage from "@/pages/IngestionPage";
 
 export default function App() {
   return (
@@ -17,8 +19,8 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="sources" element={<Placeholder title="Log Sources" phase="Phase 2 (Module 2)" />} />
-        <Route path="ingestion" element={<Placeholder title="Ingestion" phase="Phase 4" />} />
+        <Route path="sources" element={<SourcesPage />} />
+        <Route path="ingestion" element={<IngestionPage />} />
         <Route path="explorer" element={<Placeholder title="Log Explorer" phase="Phase 10" />} />
         <Route path="debugger" element={<Placeholder title="Pipeline Debugger" phase="Phase 15" />} />
         <Route path="alerts" element={<Placeholder title="Alerts" phase="Phase 13" />} />
