@@ -7,6 +7,8 @@ import DashboardPage from "@/pages/DashboardPage";
 import SourcesPage from "@/pages/SourcesPage";
 import IngestionPage from "@/pages/IngestionPage";
 import PrivacyPage from "@/pages/PrivacyPage";
+import LogExplorerPage from "@/pages/LogExplorerPage";
+import AlertsPage from "@/pages/AlertsPage";
 
 export default function App() {
   return (
@@ -22,9 +24,9 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="ingestion" element={<IngestionPage />} />
-        <Route path="explorer" element={<Placeholder title="Log Explorer" phase="Phase 10" />} />
+        <Route path="explorer" element={<LogExplorerPage />} />
         <Route path="debugger" element={<Placeholder title="Pipeline Debugger" phase="Phase 15" />} />
-        <Route path="alerts" element={<Placeholder title="Alerts" phase="Phase 13" />} />
+        <Route path="alerts" element={<AlertsPage />} />
         <Route path="analytics" element={<Placeholder title="Analytics" phase="Phase 14" />} />
         <Route path="parsers" element={<Placeholder title="Parser Packs" phase="Phase 16" />} />
         <Route path="privacy" element={<PrivacyPage />} />

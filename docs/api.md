@@ -43,11 +43,29 @@ RBAC: `VIEWER < ANALYST < ADMIN`. "Requires ANALYST" means analyst **or** admin.
 | POST | `/api/security/shield/check` | any | screen one line, return verdict + indicators |
 | GET | `/api/security/events` | any | shield detections, filter by `verdict` / `job_id` |
 
+### Log Explorer (Modules 13, 8-11)
+| GET | `/api/logs` (alias `/api/logs/search`) | any | filtered event search; raw IP/username terms auto-pseudonymized under DETERMINISTIC_HASH (response `note` says so) |
+| GET | `/api/logs/stats` | any | totals + facets (source/event_type/severity/parser/host) + hourly time series |
+| GET | `/api/logs/facets` | any | facet counts for `?fields=` |
+| GET | `/api/logs/pseudonymize` | any | `?value=&kind=` → pseudonym under current mode |
+| GET | `/api/logs/{id}` | any | universal event + raw + re-run pipeline stages + PII transforms + related events + shield events |
+
+### Correlation & detection (Modules 14-17)
+| POST | `/api/detection/run` | ANALYST | evaluate RULE_1..8 over the last N hours → create/update alerts (deduped by entity) |
+| POST | `/api/detection/correlate` | any | `{source_ip\|username\|host, center_time?, window_seconds}` → cross-source timeline |
+| GET | `/api/detection/rules` | any | list the 8 rules (id/threshold/window/enabled) |
+| PUT | `/api/detection/rules/{key}` | ADMIN | tune / enable / disable a rule (audited) |
+
+### Alerts (Modules 17-18, 27)
+| GET | `/api/alerts` | any | list, ordered by risk; filter `status` / `severity` |
+| GET | `/api/alerts/{id}` | any | alert + transparent risk breakdown + incident timeline + related events |
+| PUT | `/api/alerts/{id}` | ANALYST | status workflow (NEW/ACKNOWLEDGED/INVESTIGATING/RESOLVED/FALSE_POSITIVE) + note (audited) |
+
 ## Planned (later checkpoints)
 
-`/api/logs*` (explorer/search), `/api/correlation/*`, `/api/alerts*`,
-`/api/analytics/*`, `/api/parsers*`, `/api/ai/explain`, `/api/compression/stats`,
-`/api/response/simulate`.
+`/api/analytics/overview` (dashboard aggregates), `/api/pipeline/debug` (interactive
+debugger), `/api/parsers*`, `/api/ai/explain`, `/api/compression/stats`,
+`/api/response/simulate`, `/api/templates*`.
 
 Each returns `422` with a Pydantic error list on invalid input, `401` when
 unauthenticated, `403` when the role is insufficient.

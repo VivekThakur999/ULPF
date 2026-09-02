@@ -51,6 +51,35 @@ def admin_headers(admin_token) -> dict:
     return {"Authorization": f"Bearer {admin_token}"}
 
 
+@pytest.fixture(scope="module")
+def client_module():
+    return TestClient(app)
+
+
+@pytest.fixture(scope="module")
+def analyst_headers_module(client_module):
+    client_module.post(
+        "/api/auth/login", json={"email": "admin@ulpf.io", "password": "AdminPass!123"}
+    )  # ensure admin exists
+    r = client_module.post(
+        "/api/auth/login", json={"email": "analyst@ulpf.io", "password": "AnalystPass!1"}
+    )
+    if r.status_code != 200:
+        admin = client_module.post(
+            "/api/auth/login", json={"email": "admin@ulpf.io", "password": "AdminPass!123"}
+        ).json()["access_token"]
+        client_module.post(
+            "/api/users",
+            headers={"Authorization": f"Bearer {admin}"},
+            json={"email": "analyst@ulpf.io", "full_name": "An Analyst",
+                  "password": "AnalystPass!1", "role": "ANALYST"},
+        )
+        r = client_module.post(
+            "/api/auth/login", json={"email": "analyst@ulpf.io", "password": "AnalystPass!1"}
+        )
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
 @pytest.fixture
 def analyst_headers(client, admin_headers) -> dict:
     client.post(

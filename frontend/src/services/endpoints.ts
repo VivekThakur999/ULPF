@@ -110,3 +110,156 @@ export const pipelineTest = (body: {
   declared_format?: string;
   pii_mode?: string;
 }) => api.post<PipelineTestResult>("/pipeline/test", body).then((r) => r.data);
+
+// --- logs / explorer ---
+export interface UniversalEvent {
+  id: string;
+  schema_version: string;
+  timestamp: string | null;
+  ingested_at: string | null;
+  source: string;
+  host: string | null;
+  event_type: string | null;
+  severity: string | null;
+  username: string | null;
+  email: string | null;
+  source_ip: string | null;
+  destination_ip: string | null;
+  source_port: number | null;
+  destination_port: number | null;
+  protocol: string | null;
+  action: string | null;
+  status: string | null;
+  process: string | null;
+  service: string | null;
+  url: string | null;
+  http_method: string | null;
+  response_code: number | null;
+  message: string;
+  extra: Record<string, unknown>;
+  field_confidence: Record<string, number>;
+  raw_log: string;
+  parser: string;
+  parser_version: string;
+  pii_protected: boolean;
+  pii_mode: string;
+  processing_status: string;
+  confidence: number;
+  template_id: string | null;
+  job_id?: string | null;
+}
+
+export type LogFilters = Partial<
+  Record<
+    | "text" | "source" | "host" | "source_ip" | "destination_ip" | "username"
+    | "event_type" | "severity" | "action" | "status" | "parser" | "processing_status"
+    | "time_from" | "time_to",
+    string
+  >
+> & { limit?: number; offset?: number };
+
+export const searchLogs = (filters: LogFilters) =>
+  api
+    .get<{ total: number; items: UniversalEvent[]; limit: number; offset: number; note: string | null }>(
+      "/logs",
+      { params: filters },
+    )
+    .then((r) => r.data);
+
+export const logStats = () =>
+  api
+    .get<{ total_events: number; facets: Record<string, { value: string; count: number }[]>; timeseries: { bucket: string; count: number }[] }>(
+      "/logs/stats",
+    )
+    .then((r) => r.data);
+
+export interface LogDetail {
+  event: UniversalEvent;
+  raw_log: { id: string; line_number: number; content: string; status: string; security_verdict: string; processing_errors: unknown[] } | null;
+  job: { id: string; filename: string; detected_format: string; source_name: string } | null;
+  pipeline: {
+    stage: string;
+    status: string;
+    summary: string;
+    fields: Record<string, unknown>;
+    transformations: Record<string, unknown>[];
+    warnings: string[];
+    errors: string[];
+  }[];
+  pii_transformations: { field: string; kind: string; pseudonym: string }[];
+  related_events: UniversalEvent[];
+  security_events: { id: string; detection_type: string; verdict: string; severity: string; reason: string }[];
+}
+export const getLogDetail = (id: string) =>
+  api.get<LogDetail>(`/logs/${id}`).then((r) => r.data);
+
+// --- alerts / detection ---
+export interface RiskFactor {
+  factor: string;
+  points: number;
+  detail: string;
+}
+export interface Alert {
+  id: string;
+  ts: string;
+  title: string;
+  severity: string;
+  risk_score: number;
+  source: string;
+  rule_key: string | null;
+  description: string;
+  reason: string;
+  risk_breakdown: { score: number; band: string; summary: string; factors: RiskFactor[] };
+  entity: Record<string, unknown>;
+  related_event_ids: string[];
+  affected_hosts: string[];
+  recommended_response: {
+    action: string;
+    label: string;
+    target: Record<string, string>;
+    auto_execute: boolean;
+    note: string;
+    urgency: string;
+  };
+  status: string;
+  resolution_note: string;
+  updated_at: string;
+}
+export interface TimelineEntry {
+  ts: string | null;
+  event_id: string;
+  source: string;
+  host: string | null;
+  event_type: string | null;
+  action: string | null;
+  status: string | null;
+  severity: string | null;
+  summary: string;
+}
+
+export const listAlerts = (params?: { status?: string; severity?: string }) =>
+  api.get<{ total: number; items: Alert[] }>("/alerts", { params }).then((r) => r.data);
+export const getAlert = (id: string) =>
+  api
+    .get<{ alert: Alert; timeline: TimelineEntry[]; related_events: UniversalEvent[]; correlation: Record<string, unknown> }>(
+      `/alerts/${id}`,
+    )
+    .then((r) => r.data);
+export const updateAlert = (id: string, body: { status?: string; resolution_note?: string }) =>
+  api.put<Alert>(`/alerts/${id}`, body).then((r) => r.data);
+export const runDetection = (since_hours = 24) =>
+  api.post<{ alerts_created_or_updated: number }>("/detection/run", { since_hours }).then((r) => r.data);
+
+export interface SecurityRule {
+  rule_key: string;
+  name: string;
+  description: string;
+  severity: string;
+  threshold: number;
+  window_seconds: number;
+  enabled: boolean;
+  params: Record<string, unknown>;
+}
+export const listRules = () => api.get<SecurityRule[]>("/detection/rules").then((r) => r.data);
+export const updateRule = (key: string, body: Partial<SecurityRule>) =>
+  api.put<SecurityRule>(`/detection/rules/${key}`, body).then((r) => r.data);

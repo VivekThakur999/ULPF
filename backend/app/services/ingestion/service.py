@@ -161,6 +161,18 @@ def process_job(db: Session, job: ProcessingJob, data: bytes) -> ProcessingJob:
         db.commit()
         log.info("job %s done: %d/%d processed, %d invalid, %d dup, %d quarantined (%.0f rec/s)",
                  job.id, processed, total, invalid, duplicates, quarantined, job.processing_rate)
+
+        # Run deterministic detection over recently-ingested events (cross-job,
+        # so multi-source correlation works). Never fail the job on detection error.
+        try:
+            from app.services.security.detection import run_detection
+
+            new_alerts = run_detection(db)
+            job.stats = {**(job.stats or {}), "alerts_after_run": len(new_alerts)}
+            db.commit()
+        except Exception:  # pragma: no cover - defensive
+            db.rollback()
+            log.exception("post-ingestion detection failed for job %s", job.id)
     except Exception as exc:  # pragma: no cover - defensive
         db.rollback()
         job.status = JOB_FAILED
