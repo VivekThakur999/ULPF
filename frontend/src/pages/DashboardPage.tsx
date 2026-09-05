@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Database, FileWarning, Files, Layers, ShieldX, Zap } from "lucide-react";
-import { analyticsOverview } from "@/services/endpoints";
+import { analyticsOverview, type AnalyticsOverview } from "@/services/endpoints";
 import { useAuth } from "@/hooks/useAuth";
-import { Badge, ErrorState, PageHeader, Spinner } from "@/components/ui";
+import { Badge, ErrorState, LiveDot, PageHeader, Spinner } from "@/components/ui";
 import { BarSeries, ChartCard, DonutSeries, TimeSeries } from "@/components/charts";
+import PipelineFlow from "@/components/PipelineFlow";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -13,10 +14,30 @@ export default function DashboardPage() {
     refetchInterval: 10000,
   });
 
-  if (q.isLoading) return <Spinner label="Loading dashboard…" />;
-  if (q.isError) return <ErrorState error={q.error} />;
-  const d = q.data!;
+  return (
+    <div>
+      <PageHeader
+        title="Dashboard"
+        subtitle={`Signed in as ${user?.email} (${user?.role}). Every number on this page is queried live from the backend — nothing is hard-coded.`}
+        actions={<LiveDot label={q.data ? `updated ${new Date(q.data.generated_at).toLocaleTimeString()}` : "Live"} />}
+      />
 
+      <div className="mb-6">
+        <PipelineFlow />
+      </div>
+
+      {q.isLoading ? (
+        <Spinner label="Loading dashboard…" />
+      ) : q.isError ? (
+        <ErrorState error={q.error} onRetry={q.refetch} />
+      ) : (
+        <DashboardBody data={q.data!} />
+      )}
+    </div>
+  );
+}
+
+function DashboardBody({ data: d }: { data: AnalyticsOverview }) {
   const cards = [
     { label: "Total Logs", value: d.cards.total_logs, icon: Files },
     { label: "Processed", value: d.cards.processed, icon: Layers },
@@ -33,21 +54,13 @@ export default function DashboardPage() {
     },
   ];
 
-  return (
-    <div>
-      <PageHeader
-        title="Dashboard"
-        subtitle={`Signed in as ${user?.email} (${user?.role}). Every number below is queried live from the backend — nothing is hard-coded.`}
-        actions={
-          <span className="text-xs text-gray-500">
-            updated {new Date(d.generated_at).toLocaleTimeString()}
-          </span>
-        }
-      />
+  const hasAnyData = d.cards.total_logs > 0;
 
+  return (
+    <>
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
-          <div key={c.label} className="card">
+          <div key={c.label} className="card transition hover:border-brand/40">
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-wide text-gray-400">{c.label}</span>
               <c.icon className="h-4 w-4 text-gray-600" />
@@ -68,6 +81,15 @@ export default function DashboardPage() {
           <span className="font-semibold text-gray-200">{d.shield_events}</span>
         </span>
       </div>
+
+      {!hasAnyData && (
+        <div className="mb-6 rounded-lg border border-dashed border-base-border p-6 text-center">
+          <p className="text-sm text-gray-300">No logs ingested yet.</p>
+          <p className="mt-1 text-xs text-gray-500">
+            Go to <b>Ingestion</b> to upload a file, import a synthetic sample, or run the SIH Demo.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <ChartCard title="Events over time">
@@ -136,6 +158,6 @@ export default function DashboardPage() {
           </table>
         </div>
       )}
-    </div>
+    </>
   );
 }

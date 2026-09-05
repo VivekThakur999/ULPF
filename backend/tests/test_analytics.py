@@ -63,3 +63,25 @@ def test_timeline_endpoint(client, admin_headers):
 
 def test_analytics_requires_auth(client):
     assert client.get("/api/analytics/overview").status_code == 401
+
+
+def test_pipeline_overview_reflects_real_ingestion(client, analyst_headers, admin_headers):
+    before = {n["key"]: n["count"] for n in
+             client.get("/api/analytics/pipeline", headers=admin_headers).json()["nodes"]}
+
+    content = (_SAMPLES / "malformed" / "weaponized.log").read_bytes()
+    r = client.post("/api/ingestion/upload", headers=analyst_headers,
+                    files={"file": ("weaponized.log", content, "text/plain")})
+    job = _wait(client, analyst_headers, r.json()["id"])
+
+    after_nodes = client.get("/api/analytics/pipeline", headers=admin_headers).json()["nodes"]
+    after = {n["key"]: n for n in after_nodes}
+
+    # ingestion count grew by exactly the job's total
+    assert after["ingestion"]["count"] == before["ingestion"] + job["total_records"]
+    # the shield actually flagged some of these lines
+    assert after["detection"]["detail"]["weaponized"] + after["detection"]["detail"]["suspicious"] >= 3
+    # node keys are the documented pipeline stages, in order
+    keys = [n["key"] for n in after_nodes]
+    assert keys == ["sources", "ingestion", "detection", "parsing", "cleaning",
+                    "pii", "normalization", "validation", "correlation", "risk", "alert"]

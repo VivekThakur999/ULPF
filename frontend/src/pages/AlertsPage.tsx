@@ -7,9 +7,10 @@ import {
   runDetection,
   updateAlert,
   type Alert,
+  type TimelineEntry,
 } from "@/services/endpoints";
 import { useAuth } from "@/hooks/useAuth";
-import { Badge, EmptyState, ErrorState, PageHeader, Spinner } from "@/components/ui";
+import { Badge, EmptyState, ErrorState, LiveDot, PageHeader, Spinner } from "@/components/ui";
 import { severityClass } from "@/utils/severity";
 import EventDetail from "@/components/EventDetail";
 
@@ -20,7 +21,11 @@ export default function AlertsPage() {
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
 
-  const alerts = useQuery({ queryKey: ["alerts"], queryFn: () => listAlerts() });
+  const alerts = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => listAlerts(),
+    refetchInterval: 15000,
+  });
   const detect = useMutation({
     mutationFn: () => runDetection(24),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["alerts"] }),
@@ -32,18 +37,21 @@ export default function AlertsPage() {
         title="Security Alerts"
         subtitle="Produced by the deterministic correlation + rules engine. Every alert carries a transparent risk breakdown and an incident timeline."
         actions={
-          hasRole("ANALYST") && (
-            <button className="btn-ghost" disabled={detect.isPending} onClick={() => detect.mutate()}>
-              <RefreshCw className={`h-4 w-4 ${detect.isPending ? "animate-spin" : ""}`} /> Run detection
-            </button>
-          )
+          <div className="flex items-center gap-3">
+            <LiveDot />
+            {hasRole("ANALYST") && (
+              <button className="btn-ghost" disabled={detect.isPending} onClick={() => detect.mutate()}>
+                <RefreshCw className={`h-4 w-4 ${detect.isPending ? "animate-spin" : ""}`} /> Run detection
+              </button>
+            )}
+          </div>
         }
       />
 
       {alerts.isLoading ? (
         <Spinner />
       ) : alerts.isError ? (
-        <ErrorState error={alerts.error} />
+        <ErrorState error={alerts.error} onRetry={alerts.refetch} />
       ) : alerts.data && alerts.data.items.length > 0 ? (
         <div className="space-y-2">
           {alerts.data.items.map((a) => (
@@ -150,6 +158,8 @@ function AlertDetail({ alertId, onClose }: { alertId: string; onClose: () => voi
               </div>
             )}
 
+            <CorrelationConverge alert={q.data.alert} timeline={q.data.timeline} />
+
             <Section title="Why this triggered">
               <p className="text-sm text-gray-300">{q.data.alert.reason}</p>
             </Section>
@@ -245,6 +255,63 @@ function AlertDetail({ alertId, onClose }: { alertId: string; onClose: () => voi
       </div>
       {eventId && <EventDetail eventId={eventId} onClose={() => setEventId(null)} />}
     </div>
+  );
+}
+
+/**
+ * The "N sources converge -> correlation -> risk -> alert" investigation
+ * visual. Built entirely from this alert's real timeline/risk data - the
+ * sources, counts and band shown are exactly what produced the alert.
+ */
+function CorrelationConverge({ alert, timeline }: { alert: Alert; timeline: TimelineEntry[] }) {
+  const bySource = new Map<string, number>();
+  for (const t of timeline) bySource.set(t.source, (bySource.get(t.source) ?? 0) + 1);
+  const sources = [...bySource.entries()];
+  if (sources.length === 0) return null;
+
+  const band = alert.risk_breakdown.band;
+  const bandColor =
+    band === "critical" ? "border-red-500/60 bg-red-500/10 text-red-300"
+    : band === "high" ? "border-orange-500/60 bg-orange-500/10 text-orange-300"
+    : band === "medium" ? "border-amber-500/60 bg-amber-500/10 text-amber-300"
+    : "border-sky-500/60 bg-sky-500/10 text-sky-300";
+
+  return (
+    <div className="mb-5 rounded-lg border border-base-border bg-base-bg/40 p-4">
+      <div className="flex flex-col items-center gap-2 lg:flex-row lg:justify-center lg:gap-4">
+        <div className="flex flex-wrap justify-center gap-2">
+          {sources.map(([src, n]) => (
+            <div key={src} className="rounded-md border border-base-border bg-base-panel px-3 py-2 text-center text-xs">
+              <div className="font-semibold uppercase tracking-wide text-gray-300">{src}</div>
+              <div className="text-gray-500">{n} event{n === 1 ? "" : "s"}</div>
+            </div>
+          ))}
+        </div>
+        <ConvergeArrow />
+        <div className="rounded-md border border-brand/50 bg-brand/10 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-brand-fg">
+          Correlation
+          <div className="font-normal normal-case text-gray-400">{sources.length} sources linked</div>
+        </div>
+        <ConvergeArrow />
+        <div className={`rounded-md border px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide ${bandColor}`}>
+          Risk {Math.round(alert.risk_score)}
+          <div className="font-normal normal-case opacity-80">{band} band</div>
+        </div>
+        <ConvergeArrow />
+        <div className="rounded-md border border-base-border bg-base-panel px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-gray-200">
+          {alert.severity} Alert
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConvergeArrow() {
+  return (
+    <>
+      <span className="text-gray-700 lg:hidden">↓</span>
+      <span className="hidden text-gray-700 lg:inline">→</span>
+    </>
   );
 }
 

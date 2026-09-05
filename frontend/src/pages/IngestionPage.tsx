@@ -17,6 +17,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  LiveDot,
   PageHeader,
   Progress,
   Spinner,
@@ -69,11 +70,14 @@ export default function IngestionPage() {
         </Card>
       )}
 
-      <h2 className="mb-2 text-sm font-semibold text-gray-300">Processing jobs</h2>
+      <div className="mb-2 flex items-center gap-3">
+        <h2 className="text-sm font-semibold text-gray-300">Processing jobs</h2>
+        <LiveDot />
+      </div>
       {jobs.isLoading ? (
         <Spinner />
       ) : jobs.isError ? (
-        <ErrorState error={jobs.error} />
+        <ErrorState error={jobs.error} onRetry={jobs.refetch} />
       ) : jobs.data && jobs.data.items.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

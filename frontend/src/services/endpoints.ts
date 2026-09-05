@@ -308,6 +308,18 @@ export interface AnalyticsOverview {
 export const analyticsOverview = () =>
   api.get<AnalyticsOverview>("/analytics/overview").then((r) => r.data);
 
+export interface PipelineNode {
+  key: string;
+  label: string;
+  count: number;
+  status: "idle" | "ok" | "warn" | "critical" | "running";
+  detail: Record<string, unknown>;
+}
+export const analyticsPipeline = () =>
+  api
+    .get<{ nodes: PipelineNode[]; generated_at: string }>("/analytics/pipeline")
+    .then((r) => r.data);
+
 // --- parsers ---
 export interface ParserInfo {
   name: string;

@@ -14,6 +14,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  LiveDot,
   PageHeader,
   Spinner,
   statusTone,
@@ -29,7 +30,7 @@ export default function SourcesPage() {
   const isAdmin = hasRole("ADMIN");
   const [showForm, setShowForm] = useState(false);
 
-  const sources = useQuery({ queryKey: ["sources"], queryFn: listSources });
+  const sources = useQuery({ queryKey: ["sources"], queryFn: listSources, refetchInterval: 15000 });
   const adapters = useQuery({ queryKey: ["adapters"], queryFn: listAdapters });
 
   const del = useMutation({
@@ -60,11 +61,14 @@ export default function SourcesPage() {
         />
       )}
 
-      <h2 className="mb-2 mt-2 text-sm font-semibold text-gray-300">Configured sources</h2>
+      <div className="mb-2 mt-2 flex items-center gap-3">
+        <h2 className="text-sm font-semibold text-gray-300">Configured sources</h2>
+        <LiveDot />
+      </div>
       {sources.isLoading ? (
         <Spinner />
       ) : sources.isError ? (
-        <ErrorState error={sources.error} />
+        <ErrorState error={sources.error} onRetry={sources.refetch} />
       ) : sources.data && sources.data.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

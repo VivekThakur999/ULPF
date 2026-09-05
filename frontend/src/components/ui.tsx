@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AlertCircle, Inbox, Loader2 } from "lucide-react";
+import { AlertCircle, Inbox, Loader2, RotateCw } from "lucide-react";
 import clsx from "clsx";
 
 export function PageHeader({
@@ -45,14 +45,63 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
-export function ErrorState({ error }: { error: unknown }) {
+export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const msg =
     (error as { message?: string })?.message ?? (typeof error === "string" ? error : "Request failed");
   return (
     <div className="flex items-center gap-2 rounded-lg border border-sev-critical/40 bg-sev-critical/10 p-3 text-sm text-red-200">
       <AlertCircle className="h-4 w-4 shrink-0" />
-      {msg}
+      <span className="flex-1">{msg}</span>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="inline-flex shrink-0 items-center gap-1 rounded border border-red-400/30 px-2 py-1 text-xs hover:bg-red-400/10"
+        >
+          <RotateCw className="h-3 w-3" /> Retry
+        </button>
+      )}
     </div>
+  );
+}
+
+/**
+ * Standardises the loading / error / empty / content states every API-driven
+ * component needs, so no screen is ever silently blank or stuck.
+ */
+export function QueryState<T>({
+  query,
+  loadingLabel,
+  emptyTitle,
+  emptyHint,
+  isEmpty,
+  children,
+}: {
+  query: { isLoading: boolean; isError: boolean; error: unknown; data: T | undefined; refetch: () => void };
+  loadingLabel?: string;
+  emptyTitle?: string;
+  emptyHint?: string;
+  isEmpty?: (data: T) => boolean;
+  children: (data: T) => ReactNode;
+}) {
+  if (query.isLoading) return <Spinner label={loadingLabel} />;
+  if (query.isError) return <ErrorState error={query.error} onRetry={query.refetch} />;
+  const data = query.data as T;
+  if (isEmpty?.(data)) {
+    return <EmptyState title={emptyTitle ?? "Nothing here yet"} hint={emptyHint} />;
+  }
+  return <>{children(data)}</>;
+}
+
+/** Small pulsing dot + label used to mark panels that poll live backend data. */
+export function LiveDot({ label = "Live" }: { label?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+      </span>
+      {label}
+    </span>
   );
 }
 

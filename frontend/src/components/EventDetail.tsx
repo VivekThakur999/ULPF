@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, FileText, ShieldCheck, Sparkles } from "lucide-react";
 import { getLogDetail } from "@/services/endpoints";
-import { Badge, Spinner, verdictTone } from "@/components/ui";
+import { Badge, ErrorState, Spinner, verdictTone } from "@/components/ui";
 import { severityClass } from "@/utils/severity";
 import type { UniversalEvent } from "@/services/endpoints";
 
@@ -29,8 +30,10 @@ export default function EventDetail({ eventId, onClose }: { eventId: string; onC
         className="h-full w-full max-w-2xl overflow-y-auto border-l border-base-border bg-base-panel p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        {q.isLoading || !q.data ? (
-          <Spinner />
+        {q.isLoading ? (
+          <Spinner label="Loading event…" />
+        ) : q.isError || !q.data ? (
+          <ErrorState error={q.error ?? "Event not found"} onRetry={q.refetch} />
         ) : (
           <>
             <div className="mb-4 flex items-start justify-between">
@@ -45,6 +48,8 @@ export default function EventDetail({ eventId, onClose }: { eventId: string; onC
                 Close
               </button>
             </div>
+
+            <TransformFlow event={q.data.event} />
 
             <div className="mb-3 flex gap-2 border-b border-base-border text-sm">
               {(["universal", "raw", "pipeline", "related"] as const).map((t) => (
@@ -141,6 +146,36 @@ export default function EventDetail({ eventId, onClose }: { eventId: string; onC
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Makes "raw log -> pipeline -> universal event" visually obvious at a glance. */
+function TransformFlow({ event }: { event: UniversalEvent }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-base-border bg-base-bg/50 p-2.5 text-xs">
+      <div className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1">
+        <FileText className="h-3.5 w-3.5 text-gray-500" />
+        Raw Log
+      </div>
+      <ArrowRight className="h-3.5 w-3.5 text-gray-700" />
+      <div className="flex items-center gap-1.5 rounded bg-blue-500/10 px-2 py-1 text-blue-300">
+        {event.parser} <span className="text-blue-500/70">v{event.parser_version}</span>
+      </div>
+      <ArrowRight className="h-3.5 w-3.5 text-gray-700" />
+      {event.pii_mode !== "OFF" && (
+        <>
+          <div className="flex items-center gap-1.5 rounded bg-purple-500/10 px-2 py-1 text-purple-300">
+            <ShieldCheck className="h-3.5 w-3.5" /> PII {event.pii_mode}
+          </div>
+          <ArrowRight className="h-3.5 w-3.5 text-gray-700" />
+        </>
+      )}
+      <div className="flex items-center gap-1.5 rounded bg-emerald-500/10 px-2 py-1 text-emerald-300">
+        <Sparkles className="h-3.5 w-3.5" /> Universal Event
+        <span className="text-emerald-500/70">schema {event.schema_version}</span>
+      </div>
+      <span className="ml-auto text-gray-600">confidence {(event.confidence * 100).toFixed(0)}%</span>
     </div>
   );
 }

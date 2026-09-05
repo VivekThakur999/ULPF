@@ -68,7 +68,7 @@ export default function ParserPacksPage() {
       {parsers.isLoading ? (
         <Spinner />
       ) : parsers.isError ? (
-        <ErrorState error={parsers.error} />
+        <ErrorState error={parsers.error} onRetry={parsers.refetch} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

@@ -75,14 +75,25 @@ export default function LogExplorerPage() {
         </div>
       </div>
 
+      {Object.keys(applied).length > 0 && (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-gray-500">Active filters:</span>
+          {Object.entries(applied).map(([k, v]) => (
+            <Badge key={k} tone="blue">
+              {k}: {v}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       {q.data?.note && (
         <p className="mb-2 text-xs text-brand-fg">ℹ {q.data.note}</p>
       )}
 
       {q.isLoading ? (
-        <Spinner />
+        <Spinner label="Searching…" />
       ) : q.isError ? (
-        <ErrorState error={q.error} />
+        <ErrorState error={q.error} onRetry={q.refetch} />
       ) : q.data && q.data.items.length > 0 ? (
         <>
           <div className="mb-2 text-xs text-gray-500">
@@ -144,7 +155,14 @@ export default function LogExplorerPage() {
           </div>
         </>
       ) : (
-        <EmptyState title="No events match" hint="Ingest some logs first, or widen your filters." />
+        <EmptyState
+          title={Object.keys(applied).length > 0 ? "No events match these filters" : "No events yet"}
+          hint={
+            Object.keys(applied).length > 0
+              ? "Try clearing a filter or widening the time range."
+              : "Ingest a file or sample on the Ingestion page to populate the explorer."
+          }
+        />
       )}
 
       {selected && <EventDetail eventId={selected} onClose={() => setSelected(null)} />}

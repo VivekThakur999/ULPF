@@ -1,8 +1,10 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { Activity, Sparkles, Waypoints } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/layouts/AppLayout";
 import { Spinner } from "@/components/ui";
+import ComingSoon from "@/components/ComingSoon";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import SourcesPage from "@/pages/SourcesPage";
@@ -39,23 +41,57 @@ export default function App() {
         <Route path="analytics" element={<Navigate to="/" replace />} />
         <Route path="parsers" element={<Lazy><ParserPacksPage /></Lazy>} />
         <Route path="privacy" element={<PrivacyPage />} />
-        <Route path="compression" element={<PlaceholderRoute title="Compression" phase="Phase 18" />} />
-        <Route path="response" element={<PlaceholderRoute title="Response Simulator" phase="Phase 20" />} />
-        <Route path="assistant" element={<PlaceholderRoute title="AI Assistant" phase="Phase 19" />} />
+        <Route
+          path="compression"
+          element={
+            <ComingSoon
+              title="Compression"
+              icon={Waypoints}
+              checkpoint="Checkpoint 6"
+              summary="Template mining and template-based micro-compression for repeated log structures."
+              bullets={[
+                "Mine templates from ingested events (e.g. TPL-0045: \"User <*> logged in from <*>\")",
+                "Store template ID + extracted variables instead of the full repeated string",
+                "Guarantee exact reconstruction of the original event",
+                "Report only measured Original / Compressed / Savings — never an assumed percentage",
+              ]}
+            />
+          }
+        />
+        <Route
+          path="response"
+          element={
+            <ComingSoon
+              title="Response Simulator"
+              icon={Activity}
+              checkpoint="Checkpoint 8"
+              summary="Safe, clearly-labelled simulation of a recommended response action — never a live change."
+              bullets={[
+                "Take an alert's recommended_response and simulate it against a fake firewall/IAM target",
+                "Every result is labelled SIMULATION ONLY — no real enforcement",
+                "Full audit record of who simulated what, when, and against which alert",
+              ]}
+            />
+          }
+        />
+        <Route
+          path="assistant"
+          element={
+            <ComingSoon
+              title="AI Assistant"
+              icon={Sparkles}
+              checkpoint="Checkpoint 7"
+              summary="Optional offline log/alert/event explanation. Never required for the core pipeline, never overrides deterministic detection or risk scoring."
+              bullets={[
+                "Explain a raw log, a normalized event, or an alert in plain language",
+                "Local/template provider by default; optional local Ollama model",
+                "Every explanation is clearly marked LOCAL / OFFLINE and non-authoritative",
+              ]}
+            />
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
-}
-
-function PlaceholderRoute({ title, phase }: { title: string; phase: string }) {
-  return (
-    <div>
-      <h1 className="mb-1 text-xl font-semibold">{title}</h1>
-      <p className="text-sm text-gray-400">
-        Planned for <span className="text-brand-fg">{phase}</span>. Navigation stub — no placeholder
-        data is shown until that phase lands.
-      </p>
-    </div>
   );
 }

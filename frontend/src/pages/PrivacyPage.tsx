@@ -39,7 +39,7 @@ export default function PrivacyPage() {
   });
 
   if (settings.isLoading || !draft) return <Spinner />;
-  if (settings.isError) return <ErrorState error={settings.error} />;
+  if (settings.isError) return <ErrorState error={settings.error} onRetry={settings.refetch} />;
 
   const set = <K extends keyof PiiSettings>(k: K, v: PiiSettings[K]) =>
     setDraft({ ...draft, [k]: v });

@@ -18,6 +18,7 @@ from app.models.ingestion import (
     ProcessingJob,
     RawLog,
 )
+from app.models.privacy import PiiSetting
 from app.models.security import SecurityAlert, SecurityEvent
 from app.models.source import LogSource
 from app.models.user import User
@@ -141,6 +142,87 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
         "source_status": source_status,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@router.get("/pipeline")
+def pipeline_overview(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    """Real per-stage counts for the Dashboard's pipeline story.
+
+    Every number here is a direct DB query against the same tables the rest of
+    the API uses - there is no separate/derived "pipeline state" store.
+    """
+    total_raw = _count(db, RawLog)
+    processed = _count(db, RawLog, RawLog.status == RAW_STATUS_PROCESSED)
+    invalid = _count(db, RawLog, RawLog.status == RAW_STATUS_INVALID)
+    quarantined = _count(db, RawLog, RawLog.status == RAW_STATUS_QUARANTINED)
+    duplicates = _count(db, RawLog, RawLog.status == RAW_STATUS_DUPLICATE)
+
+    shield_safe = total_raw - _count(
+        db, RawLog, RawLog.security_verdict.in_(["SUSPICIOUS", "WEAPONIZED_LOG"])
+    )
+    shield_suspicious = _count(db, RawLog, RawLog.security_verdict == "SUSPICIOUS")
+    shield_weaponized = _count(db, RawLog, RawLog.security_verdict == "WEAPONIZED_LOG")
+
+    events = _count(db, NormalizedEvent)
+    ok_events = _count(db, NormalizedEvent, NormalizedEvent.processing_status == "ok")
+    partial_events = _count(db, NormalizedEvent, NormalizedEvent.processing_status == "partial")
+    error_events = _count(db, NormalizedEvent, NormalizedEvent.processing_status == "error")
+    pii_protected = _count(db, NormalizedEvent, NormalizedEvent.pii_protected.is_(True))
+    pii_row = db.get(PiiSetting, "default")
+
+    sources_count = _count(db, LogSource)
+    jobs_running = _count(db, ProcessingJob, ProcessingJob.status == "RUNNING")
+
+    alerts_total = _count(db, SecurityAlert)
+    alerts_new = _count(db, SecurityAlert, SecurityAlert.status == "NEW")
+    avg_risk_row = db.execute(select(func.avg(SecurityAlert.risk_score))).scalar()
+    avg_risk = round(avg_risk_row, 1) if avg_risk_row else 0.0
+    # "correlated" = an alert whose related_event_ids span more than one event;
+    # counted in Python (portable across SQLite/Postgres JSON representations).
+    correlated_alerts = sum(
+        1 for (rel,) in db.execute(select(SecurityAlert.related_event_ids)).all()
+        if rel and len(rel) > 1
+    )
+
+    parser_breakdown = _group_count(db, NormalizedEvent.parser)
+
+    nodes = [
+        {"key": "sources", "label": "Log Sources", "count": sources_count,
+         "status": "ok" if sources_count or total_raw else "idle",
+         "detail": {"configured_sources": sources_count}},
+        {"key": "ingestion", "label": "Ingestion", "count": total_raw,
+         "status": "running" if jobs_running else ("ok" if total_raw else "idle"),
+         "detail": {"jobs_running": jobs_running, "total_records": total_raw}},
+        {"key": "detection", "label": "Security Shield", "count": total_raw,
+         "status": "warn" if (shield_suspicious or shield_weaponized) else ("ok" if total_raw else "idle"),
+         "detail": {"safe": max(0, shield_safe), "suspicious": shield_suspicious,
+                    "weaponized": shield_weaponized}},
+        {"key": "parsing", "label": "Parsing", "count": processed,
+         "status": "ok" if processed else "idle",
+         "detail": {"by_parser": parser_breakdown[:6]}},
+        {"key": "cleaning", "label": "Cleaning & Validation", "count": invalid + duplicates,
+         "status": "warn" if invalid else ("ok" if total_raw else "idle"),
+         "detail": {"invalid": invalid, "duplicates": duplicates, "quarantined": quarantined}},
+        {"key": "pii", "label": "PII Protection", "count": pii_protected,
+         "status": "ok" if pii_row and pii_row.mode != "OFF" else "warn",
+         "detail": {"mode": pii_row.mode if pii_row else "OFF", "protected_events": pii_protected}},
+        {"key": "normalization", "label": "Normalization", "count": events,
+         "status": "ok" if events else "idle",
+         "detail": {"schema_version": "1.0"}},
+        {"key": "validation", "label": "Validation", "count": ok_events,
+         "status": "warn" if error_events else ("ok" if events else "idle"),
+         "detail": {"ok": ok_events, "partial": partial_events, "error": error_events}},
+        {"key": "correlation", "label": "Correlation", "count": correlated_alerts,
+         "status": "ok" if correlated_alerts else "idle",
+         "detail": {"alerts_with_related_events": correlated_alerts}},
+        {"key": "risk", "label": "Risk Scoring", "count": alerts_total,
+         "status": "warn" if avg_risk >= 65 else ("ok" if alerts_total else "idle"),
+         "detail": {"avg_risk_score": avg_risk}},
+        {"key": "alert", "label": "Alerts", "count": alerts_new,
+         "status": "critical" if alerts_new else ("ok" if alerts_total else "idle"),
+         "detail": {"total": alerts_total, "new": alerts_new}},
+    ]
+    return {"nodes": nodes, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
 @router.get("/timeline")
