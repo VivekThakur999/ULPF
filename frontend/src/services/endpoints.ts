@@ -552,3 +552,71 @@ export const aiExplain = (body:
   | { kind: "alert"; alert_id: string }
   | { kind: "raw"; text: string }
 ) => api.post<AIExplainResponse>("/ai/explain", body).then((r) => r.data);
+
+// --- response simulator (Module 28) ---
+export interface SimAction {
+  action: string;
+  target: string | null;
+  port: number | null;
+  protocol: string | null;
+  detail: string;
+  mode: string; // always "SIMULATION_ONLY"
+}
+export interface Recommendation {
+  category: string;
+  available: boolean;
+  label: string;
+  rationale: string;
+  actions: SimAction[];
+  evidence: Record<string, unknown>;
+}
+export interface RecommendResponse {
+  alert: Record<string, any>;
+  recommendation: Recommendation;
+  evidence: Record<string, any>;
+}
+export interface SimulateResponse {
+  simulation: boolean;
+  disclaimer: string;
+  audit_id: string;
+  alert: Record<string, any>;
+  recommendation: Recommendation;
+  actions: SimAction[];
+  result: {
+    simulation: boolean;
+    disclaimer: string;
+    no_real_change: boolean;
+    primary: {
+      kind: string;
+      target: string | null;
+      before: any[];
+      after: any[];
+      expected_result: string;
+      state_change: { before: string; after: string };
+      disclaimer: string;
+    } | null;
+    all: any[];
+  };
+  evidence: Record<string, unknown>;
+}
+export interface SimulationRecord {
+  id: string;
+  ts: string;
+  actor_email: string | null;
+  alert_id: string;
+  alert_title: string;
+  alert_rule_key: string | null;
+  alert_severity: string;
+  alert_risk_score: number;
+  recommendation: Recommendation;
+  actions: SimAction[];
+  result: SimulateResponse["result"];
+  simulation_only: boolean;
+}
+
+export const getRecommendation = (alertId: string) =>
+  api.get<RecommendResponse>(`/response/recommend/${alertId}`).then((r) => r.data);
+export const runResponseSimulation = (alertId: string) =>
+  api.post<SimulateResponse>("/response/simulate", { alert_id: alertId }).then((r) => r.data);
+export const listSimulations = (params?: { alert_id?: string }) =>
+  api.get<SimulationRecord[]>("/response/simulations", { params }).then((r) => r.data);

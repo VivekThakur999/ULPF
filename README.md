@@ -135,7 +135,8 @@ walks through the full workflow including the brute-force attack scenario (attac
 | CP5 | UI/UX productization: design system, interactive pipeline story, investigation drawers, live polling | ✅ done |
 | 14–15 | Deterministic template mining + template-based **lossless** micro-compression (measured benchmark, verified reconstruction) | ✅ done |
 | 16 | Offline AI log explainer: deterministic local provider + optional local Ollama, evidence-grounded, advisory only | ✅ done |
-| 17–24 | Response simulator, perf benchmarks, SIH demo mode, final hardening | ⏳ planned |
+| 17 | Safe Response Simulator: deterministic recommendations + in-memory before/after simulation, no real infrastructure touched | ✅ done |
+| 18–24 | Perf benchmarks, SIH demo mode, final hardening | ⏳ planned |
 
 ## Future scope
 

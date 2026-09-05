@@ -1,10 +1,8 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Activity } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/layouts/AppLayout";
 import { Spinner } from "@/components/ui";
-import ComingSoon from "@/components/ComingSoon";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import SourcesPage from "@/pages/SourcesPage";
@@ -15,6 +13,7 @@ import AlertsPage from "@/pages/AlertsPage";
 import TemplatesPage from "@/pages/TemplatesPage";
 import CompressionPage from "@/pages/CompressionPage";
 import AssistantPage from "@/pages/AssistantPage";
+import ResponseSimulatorPage from "@/pages/ResponseSimulatorPage";
 
 // Monaco-heavy pages are code-split so the main bundle stays lean.
 const PipelineDebuggerPage = lazy(() => import("@/pages/PipelineDebuggerPage"));
@@ -46,22 +45,7 @@ export default function App() {
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="templates" element={<TemplatesPage />} />
         <Route path="compression" element={<CompressionPage />} />
-        <Route
-          path="response"
-          element={
-            <ComingSoon
-              title="Response Simulator"
-              icon={Activity}
-              checkpoint="Checkpoint 8"
-              summary="Safe, clearly-labelled simulation of a recommended response action — never a live change."
-              bullets={[
-                "Take an alert's recommended_response and simulate it against a fake firewall/IAM target",
-                "Every result is labelled SIMULATION ONLY — no real enforcement",
-                "Full audit record of who simulated what, when, and against which alert",
-              ]}
-            />
-          }
-        />
+        <Route path="response" element={<ResponseSimulatorPage />} />
         <Route path="assistant" element={<AssistantPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

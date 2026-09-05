@@ -99,9 +99,17 @@ See [template-mining.md](template-mining.md) for the algorithm and the byte acco
 AI never modifies risk, severity, rules or alerts. See
 [security-model.md](security-model.md#ai-explanation-layer).
 
+### Response Simulator (Module 28)
+| GET | `/api/response/recommend/{alert_id}` | any | deterministic recommendation + supporting ULPF evidence for an alert |
+| POST | `/api/response/simulate` | ANALYST | body is **only** `{alert_id}` (extra fields → 422). Runs the in-memory simulation, persists a `response_simulations` row + audit entry, returns `{simulation:true, disclaimer, audit_id, alert, recommendation, actions, result}` |
+| GET | `/api/response/simulations` | any | simulation history (`simulation_only` always true) |
+
+**The Response Simulator performs no real-world action** — see
+[security-model.md](security-model.md#response-simulator).
+
 ## Planned (later checkpoints)
 
-`/api/response/simulate`, `/api/demo/load`.
+`/api/demo/load`.
 
 Each returns `422` with a Pydantic error list on invalid input, `401` when
 unauthenticated, `403` when the role is insufficient.

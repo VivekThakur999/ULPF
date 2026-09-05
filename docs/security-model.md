@@ -68,6 +68,38 @@ correlation and alert generation. The AI layer only *describes* those results.
   operations. `explain()` is a read-only code path; `tests/test_ai.py` asserts
   repeated explanation calls leave alerts, rules, risk and severity unchanged.
 
+## Response Simulator
+
+**The Response Simulator does not perform real-world response actions.** It never
+modifies a firewall (vendor, Windows Firewall, iptables/nftables), a cloud
+security group, IAM, or an endpoint; it never blocks an IP, isolates a host,
+disables an account, opens a socket, or runs a shell / PowerShell / subprocess.
+
+- `services/response/` imports **no** process, shell, or infrastructure client.
+  `tests/test_response.py::test_no_execution_primitives_in_response_code` scans
+  the source for `subprocess`, `os.system`, `Popen`, `shell=True`, `powershell`,
+  `iptables`, `nft`, `netsh`, `winreg`, `ctypes` and fails on any hit.
+- `POST /api/response/simulate` accepts **only** an `alert_id`
+  (`model_config extra="forbid"`). Risk, severity, source IP, rule, status and
+  the actions themselves are all retrieved server-side from the stored alert;
+  the client cannot inject an action or change a score (tested).
+- `recommend()` is deterministic - a fixed rule-category → response mapping, no
+  AI, no randomness. An unmapped alert yields "No automated response
+  recommendation available." rather than an invented one.
+- Simulated actions are structured objects with `mode = SIMULATION_ONLY`. The
+  virtual firewall/host/account models produce before/after state only
+  (`ALLOW → WOULD BLOCK`), each with a `SIMULATION ONLY` disclaimer.
+- Every run persists a `response_simulations` row (`simulation_only` hard-coded
+  `True`, no code path sets it `False`) plus an `audit_logs` entry tagged
+  `SIMULATION_ONLY`. Repeated simulations leave alerts, rules, risk and severity
+  unchanged (tested).
+- Attacker-controlled strings from log data (`${jndi:…}`, `<script>`,
+  `DROP TABLE`) that reach the recommendation as a target/host appear only as
+  opaque data in the output, never interpreted (tested).
+
+AI may *explain* an alert but never determines or modifies a response - the
+deterministic recommendation logic is authoritative.
+
 ## Auditing & observability
 - `audit_logs`: auth (incl. failures), user/role changes, privacy & rule config
   changes, alert state changes, shield detections.

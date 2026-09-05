@@ -8,6 +8,7 @@ from app.models.parser import ParserPack, ParserVersion  # noqa: F401
 from app.models.pipeline import PipelineRun  # noqa: F401
 from app.models.privacy import PiiSetting  # noqa: F401
 from app.models.template import Template, TemplateMatch, CompressionRecord  # noqa: F401
+from app.models.response import ResponseSimulation  # noqa: F401
 
 __all__ = [
     "User",
@@ -27,4 +28,5 @@ __all__ = [
     "Template",
     "TemplateMatch",
     "CompressionRecord",
+    "ResponseSimulation",
 ]

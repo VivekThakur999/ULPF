@@ -117,6 +117,22 @@ AI only describes those results.
   The response returns the authoritative `evidence` block separately from the
   advisory `explanation`. See [security-model.md](security-model.md#ai-explanation-layer).
 
+## 5e. Response Simulator (Module 28)
+
+`services/response/` — turns a real alert into a **deterministic** recommendation
+and a set of **representational** simulated actions. It is a pure data transform:
+the package imports no process/shell/firewall/IAM client of any kind, and
+`POST /api/response/simulate` accepts **only an `alert_id`** (`extra="forbid"`) -
+risk, severity, source, rule and actions are all read server-side from the
+alert. `recommend()` maps rule categories (brute-force / port-scan / suspicious
+auth / suspicious execution / anomalous volume) to a fixed response; if nothing
+safe applies it returns "no recommendation" rather than inventing one. The
+virtual firewall / host-isolation / account-hold models produce before/after
+state (`ALLOW → WOULD BLOCK`) and every result carries a `SIMULATION ONLY`
+disclaimer. Each run persists a `response_simulations` row (`simulation_only`
+hard-coded `True`) plus an audit-log entry. **No real infrastructure is ever
+touched** - see [security-model.md](security-model.md#response-simulator).
+
 ## 5c. Template mining & micro-compression
 
 `services/templates/` mines recurring shapes from the ingested `raw_logs`
