@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
 import { analyticsPipeline, type PipelineNode } from "@/services/endpoints";
-import { Badge, ErrorState, LiveDot, Spinner } from "@/components/ui";
+import { ErrorState, LiveDot, SectionHeader, Skeleton } from "@/components/ui";
 
-const STATUS_STYLE: Record<PipelineNode["status"], string> = {
-  idle: "border-base-border bg-base-panel text-gray-500",
-  ok: "border-emerald-500/50 bg-emerald-500/10 text-emerald-300",
-  running: "border-blue-500/50 bg-blue-500/10 text-blue-300 animate-pulse",
-  warn: "border-amber-500/50 bg-amber-500/10 text-amber-300",
-  critical: "border-red-500/50 bg-red-500/10 text-red-300",
+const NODE_STYLE: Record<PipelineNode["status"], { ring: string; text: string; dot: string }> = {
+  idle: { ring: "border-base-border", text: "text-gray-500", dot: "#3b4658" },
+  ok: { ring: "border-emerald-500/40", text: "text-emerald-300", dot: "#34d399" },
+  running: { ring: "border-blue-500/50", text: "text-blue-300", dot: "#7ca9f9" },
+  warn: { ring: "border-amber-500/40", text: "text-amber-300", dot: "#fbbf24" },
+  critical: { ring: "border-red-500/50", text: "text-red-300", dot: "#f87171" },
 };
 
 const DETAIL_LABEL: Record<string, string> = {
@@ -32,12 +31,28 @@ const DETAIL_LABEL: Record<string, string> = {
   avg_risk_score: "avg risk score",
   total: "total alerts",
   new: "new alerts",
+  by_parser: "by parser",
 };
 
+function renderValue(v: unknown): string {
+  if (Array.isArray(v)) {
+    return (
+      v
+        .map((row) =>
+          row && typeof row === "object" && "label" in row
+            ? `${(row as { label: string }).label} (${(row as { value: number }).value})`
+            : String(row),
+        )
+        .join(", ") || "—"
+    );
+  }
+  return String(v);
+}
+
 /**
- * The Dashboard's pipeline story: RAW -> ... -> ALERT, with a real count on
- * every node (queried live from the backend), clickable for the underlying
- * breakdown. Nothing here is animated fake activity.
+ * The pipeline story: raw logs -> ... -> alerts, with a real count on every
+ * stage (queried live from the backend) and a detail panel per stage. The
+ * animated flow line only appears while a job is actually running.
  */
 export default function PipelineFlow() {
   const [selected, setSelected] = useState<string | null>(null);
@@ -47,58 +62,87 @@ export default function PipelineFlow() {
     refetchInterval: 8000,
   });
 
-  if (q.isLoading) return <Spinner label="Loading pipeline state…" />;
-  if (q.isError) return <ErrorState error={q.error} onRetry={q.refetch} />;
-  const nodes = q.data!.nodes;
-  const active = nodes.find((n) => n.key === selected);
+  const nodes = q.data?.nodes ?? [];
+  const active = nodes.find((n) => n.key === selected) ?? null;
+  const flowing = nodes.some((n) => n.status === "running");
 
   return (
-    <div className="card">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Pipeline — raw logs to alerts
-        </h2>
-        <LiveDot />
-      </div>
+    <div className="surface bg-surface-sheen p-4">
+      <SectionHeader
+        title="Processing pipeline"
+        hint="Raw logs to alerts — every count is live from the backend"
+        right={flowing ? <LiveDot label="processing" /> : <LiveDot label="idle" />}
+      />
 
-      <div className="flex flex-wrap items-center gap-1">
-        {nodes.map((n, i) => (
-          <div key={n.key} className="flex items-center gap-1">
-            <button
-              onClick={() => setSelected(selected === n.key ? null : n.key)}
-              className={`rounded-lg border px-3 py-2 text-left transition ${STATUS_STYLE[n.status]} ${
-                selected === n.key ? "ring-2 ring-brand" : ""
-              }`}
-            >
-              <div className="text-[10px] uppercase tracking-wide opacity-80">{n.label}</div>
-              <div className="text-lg font-semibold tabular-nums">{n.count.toLocaleString()}</div>
-            </button>
-            {i < nodes.length - 1 && <ChevronRight className="h-4 w-4 shrink-0 text-gray-700" />}
-          </div>
-        ))}
-      </div>
-
-      {active && (
-        <div className="mt-3 rounded-md border border-base-border bg-base-bg p-3 text-xs">
-          <div className="mb-1.5 font-semibold text-gray-300">{active.label} — detail</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-400">
-            {Object.entries(active.detail).map(([k, v]) => (
-              <span key={k}>
-                {DETAIL_LABEL[k] ?? k}:{" "}
-                <span className="font-medium text-gray-200">
-                  {Array.isArray(v)
-                    ? v.map((row) => (typeof row === "object" ? `${row.label}(${row.value})` : row)).join(", ") || "—"
-                    : String(v)}
-                </span>
-              </span>
-            ))}
-          </div>
-          {active.count === 0 && (
-            <p className="mt-1 text-gray-600">No activity yet at this stage.</p>
-          )}
+      {q.isLoading ? (
+        <div className="flex gap-2 overflow-hidden">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-[68px] w-28 shrink-0 rounded-lg" />
+          ))}
         </div>
+      ) : q.isError ? (
+        <ErrorState error={q.error} onRetry={q.refetch} />
+      ) : (
+        <>
+          <div className="-mx-1 overflow-x-auto px-1 pb-1">
+            <div className="flex min-w-max items-stretch gap-1.5">
+              {nodes.map((n, i) => {
+                const st = NODE_STYLE[n.status];
+                const isActive = selected === n.key;
+                return (
+                  <div key={n.key} className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSelected(isActive ? null : n.key)}
+                      aria-pressed={isActive}
+                      className={`w-32 rounded-lg border bg-base-panel px-3 py-2 text-left transition ${st.ring} ${
+                        isActive ? "ring-1 ring-brand" : "hover:border-base-border-strong"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ background: st.dot }} aria-hidden />
+                        <span className="truncate text-2xs font-semibold uppercase tracking-wide text-gray-500">
+                          {n.label}
+                        </span>
+                      </div>
+                      <div className={`mt-1 text-lg font-semibold tnum ${st.text}`}>
+                        {n.count.toLocaleString()}
+                      </div>
+                    </button>
+                    {i < nodes.length - 1 && (
+                      <div className="relative h-px w-4 shrink-0 bg-base-border-strong">
+                        {flowing && (
+                          <span className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-brand-fg/70 to-transparent" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {active ? (
+            <div className="mt-3 rounded-lg border border-base-border bg-base-bg/60 p-3 text-xs">
+              <div className="mb-1.5 font-semibold text-gray-200">{active.label}</div>
+              {Object.keys(active.detail).length === 0 ? (
+                <p className="text-gray-500">No breakdown for this stage.</p>
+              ) : (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-400">
+                  {Object.entries(active.detail).map(([k, v]) => (
+                    <span key={k}>
+                      {DETAIL_LABEL[k] ?? k}:{" "}
+                      <span className="font-medium text-gray-200">{renderValue(v)}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {active.count === 0 && <p className="mt-1 text-gray-600">No activity yet at this stage.</p>}
+            </div>
+          ) : (
+            <p className="mt-3 text-2xs text-gray-600">Select a stage for its breakdown.</p>
+          )}
+        </>
       )}
-      {!active && <Badge tone="slate">click a stage for detail</Badge>}
     </div>
   );
 }

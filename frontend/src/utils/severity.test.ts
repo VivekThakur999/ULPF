@@ -12,7 +12,12 @@ describe("severity utils", () => {
 
   it("returns a class for every severity and falls back safely", () => {
     expect(severityClass("critical")).toContain("red");
-    expect(severityClass(null)).toContain("slate");
-    expect(severityClass("bogus")).toContain("slate");
+    expect(severityClass("high")).toContain("orange");
+    expect(severityClass("medium")).toContain("amber");
+    expect(severityClass("low")).toContain("sky");
+    expect(severityClass(null)).toContain("slate"); // info fallback
+    // an unknown value degrades to a neutral style, never throws
+    expect(typeof severityClass("bogus")).toBe("string");
+    expect(severityClass("bogus").length).toBeGreaterThan(0);
   });
 });

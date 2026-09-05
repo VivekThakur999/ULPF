@@ -9,7 +9,7 @@ import {
 } from "@/services/endpoints";
 import { apiError } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, ErrorState, PageHeader, Spinner, bytes } from "@/components/ui";
+import { Card, DataTable, EmptyState, ErrorState, PageHeader, SectionHeader, Spinner, bytes, relTime } from "@/components/ui";
 import TemplateCompressionFlow from "@/components/TemplateCompressionFlow";
 
 export default function CompressionPage() {
@@ -40,6 +40,7 @@ export default function CompressionPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Pipeline"
         title="Compression"
         subtitle="Template-based micro-compression. A record is stored as a template reference plus its variable values; every reported number is measured, and every record is verified to reconstruct byte-for-byte."
         actions={
@@ -76,9 +77,9 @@ export default function CompressionPage() {
         </Card>
       )}
 
-      <h2 className="mb-2 mt-6 text-sm font-semibold text-gray-300">
-        Template → compression → reconstruction
-      </h2>
+      <div className="mt-6">
+        <SectionHeader title="Template → compression → reconstruction" />
+      </div>
       {sampleRawId ? (
         <TemplateCompressionFlow rawLogId={sampleRawId} />
       ) : (
@@ -89,56 +90,52 @@ export default function CompressionPage() {
         </Card>
       )}
 
-      <h2 className="mb-2 mt-8 text-sm font-semibold text-gray-300">Benchmark history</h2>
+      <div className="mt-8">
+        <SectionHeader title="Benchmark history" />
+      </div>
       {history.isLoading ? (
         <Spinner />
       ) : history.isError ? (
         <ErrorState error={history.error} onRetry={history.refetch} />
       ) : (history.data ?? []).length === 0 ? (
-        <p className="text-sm text-gray-500">No benchmark runs recorded yet.</p>
+        <EmptyState title="No benchmark runs recorded yet" hint="Run a benchmark above to measure compression." />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="py-2 pr-3">When</th>
-                <th className="py-2 pr-3">Scope</th>
-                <th className="py-2 pr-3 text-right">Records</th>
-                <th className="py-2 pr-3 text-right">Reconstructed</th>
-                <th className="py-2 pr-3 text-right">Original</th>
-                <th className="py-2 pr-3 text-right">Compressed</th>
-                <th className="py-2 pr-3 text-right">Savings</th>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Scope</th>
+              <th className="text-right">Records</th>
+              <th className="text-right">Reconstructed</th>
+              <th className="text-right">Original</th>
+              <th className="text-right">Compressed</th>
+              <th className="text-right">Savings</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.data!.map((rec) => (
+              <tr key={rec.id}>
+                <td className="whitespace-nowrap text-xs text-gray-400">{relTime(rec.ts)}</td>
+                <td className="font-mono text-xs">{rec.scope}</td>
+                <td className="text-right tnum">{rec.record_count}</td>
+                <td className="text-right tnum">
+                  {rec.reconstructable_count === rec.record_count ? (
+                    <span className="text-emerald-400">{rec.reconstructable_count} ✓</span>
+                  ) : (
+                    <span className="text-sev-critical">
+                      {rec.reconstructable_count}/{rec.record_count}
+                    </span>
+                  )}
+                </td>
+                <td className="text-right tnum">{bytes(rec.original_bytes)}</td>
+                <td className="text-right tnum">{bytes(rec.total_compressed_bytes)}</td>
+                <td className={`text-right tnum ${rec.reduction_pct >= 0 ? "text-emerald-400" : "text-amber-400"}`}>
+                  {rec.reduction_pct.toFixed(1)}%
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {history.data!.map((rec) => (
-                <tr key={rec.id} className="border-t border-base-border">
-                  <td className="py-2 pr-3 text-xs text-gray-400">{new Date(rec.ts).toLocaleString()}</td>
-                  <td className="py-2 pr-3 font-mono text-xs">{rec.scope}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">{rec.record_count}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">
-                    {rec.reconstructable_count === rec.record_count ? (
-                      <span className="text-emerald-400">{rec.reconstructable_count} ✓</span>
-                    ) : (
-                      <span className="text-sev-critical">
-                        {rec.reconstructable_count}/{rec.record_count}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 pr-3 text-right tabular-nums">{bytes(rec.original_bytes)}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">{bytes(rec.total_compressed_bytes)}</td>
-                  <td
-                    className={`py-2 pr-3 text-right tabular-nums ${
-                      rec.reduction_pct >= 0 ? "text-emerald-400" : "text-amber-400"
-                    }`}
-                  >
-                    {rec.reduction_pct.toFixed(1)}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </DataTable>
       )}
     </div>
   );

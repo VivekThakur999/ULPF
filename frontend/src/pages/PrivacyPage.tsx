@@ -47,6 +47,7 @@ export default function PrivacyPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="System"
         title="Privacy Configuration"
         subtitle="Deterministic pseudonymization lets analysts correlate an IP or user across sources without seeing the raw identifier. This alone is not a GDPR-compliance claim."
       />

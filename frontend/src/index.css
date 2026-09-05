@@ -1,3 +1,5 @@
+/* ULPF ships no web fonts - it must run fully offline. The stack below prefers
+   Inter if the host has it, then falls through to first-class system fonts. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,34 +16,133 @@ body,
 
 body {
   margin: 0;
-  background: #0b0f17;
-  color: #e5e7eb;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #080b11;
+  color: #e6e9ef;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* thin, unobtrusive scrollbars that match the surface palette */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2b3546 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #2b3546;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #3a4658;
+  background-clip: content-box;
+}
+
+/* honour the user's motion preference everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 @layer components {
+  /* --- surfaces --- */
   .card {
-    @apply rounded-lg border border-base-border bg-base-panel p-4;
+    @apply rounded-xl border border-base-border bg-base-panel p-4 shadow-panel;
   }
+  .surface {
+    @apply rounded-xl border border-base-border bg-base-panel shadow-panel;
+  }
+  .surface-2 {
+    @apply rounded-lg border border-base-border bg-base-panel-2;
+  }
+
+  /* --- buttons --- */
   .btn {
-    @apply inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition
-      disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium
+      transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-blue-600;
+    @apply btn bg-brand text-white hover:bg-blue-500 active:bg-blue-600;
   }
   .btn-ghost {
-    @apply btn border border-base-border text-gray-200 hover:bg-white/5;
+    @apply btn border border-base-border bg-base-panel-2 text-gray-200 hover:border-base-border-strong hover:bg-white/5;
   }
+  .btn-danger {
+    @apply btn border border-sev-critical/40 bg-sev-critical/10 text-red-200 hover:bg-sev-critical/20;
+  }
+
+  /* --- form controls --- */
   .input {
-    @apply w-full rounded-md border border-base-border bg-base-bg px-3 py-2 text-sm
-      outline-none focus:border-brand focus:ring-1 focus:ring-brand;
+    @apply w-full rounded-lg border border-base-border bg-base-panel-2 px-3 py-2 text-sm
+      text-gray-100 placeholder:text-gray-600 outline-none transition-colors
+      focus:border-brand focus:ring-1 focus:ring-brand/60;
+  }
+  select.input {
+    @apply cursor-pointer;
   }
   .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-gray-400;
+    @apply mb-1 block text-2xs font-semibold uppercase tracking-wider text-gray-500;
   }
+
+  /* --- badges / pills --- */
   .badge {
-    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-semibold;
+  }
+
+  /* --- tables --- */
+  .tbl {
+    @apply w-full text-sm;
+  }
+  .tbl thead th {
+    @apply whitespace-nowrap border-b border-base-border px-3 py-2 text-left text-2xs
+      font-semibold uppercase tracking-wider text-gray-500;
+  }
+  .tbl tbody td {
+    @apply border-b border-base-border/60 px-3 py-2 align-middle;
+  }
+  .tbl tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .tbl tbody tr.clickable {
+    @apply cursor-pointer transition-colors hover:bg-white/[0.03];
+  }
+
+  /* --- misc --- */
+  .kbd {
+    @apply rounded border border-base-border-strong bg-base-panel-2 px-1.5 py-0.5 font-mono text-2xs text-gray-400;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: linear-gradient(180deg, rgba(20, 27, 38, 0.9), rgba(15, 20, 29, 0.9));
+    backdrop-filter: blur(8px);
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
   }
 }

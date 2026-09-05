@@ -12,12 +12,20 @@ import {
 } from "@/services/endpoints";
 import { apiError } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
-import { Badge, Card, ErrorState, PageHeader, Spinner } from "@/components/ui";
-import { severityClass } from "@/utils/severity";
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  SectionHeader,
+  Spinner,
+  StatusPill,
+  relTime,
+} from "@/components/ui";
 
 function SimBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded bg-amber-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/40">
+    <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/35">
       Simulation only
     </span>
   );
@@ -58,12 +66,13 @@ export default function ResponseSimulatorPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Response"
         title="Response Simulator"
-        subtitle="Safely test incident-response actions without changing real infrastructure. No firewall, host, or identity system is ever contacted."
+        subtitle="Safely model incident-response actions without changing real infrastructure. No firewall, host, or identity system is ever contacted."
         actions={<SimBadge />}
       />
 
-      <Card className="mb-4">
+      <div className="surface bg-surface-sheen mb-4 p-4">
         <label className="label">Select alert</label>
         {alerts.isLoading ? (
           <Spinner />
@@ -89,36 +98,38 @@ export default function ResponseSimulatorPage() {
         )}
 
         {selectedAlert && (
-          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
             <Field k="Alert ID" v={selectedAlert.id} mono />
-            <Field k="Severity" v={<span className={`badge ${severityClass(selectedAlert.severity)}`}>{selectedAlert.severity}</span>} />
+            <Field k="Severity" v={<StatusPill status={selectedAlert.severity} />} />
             <Field k="Risk score" v={`${Math.round(selectedAlert.risk_score)} / 100`} />
             <Field k="Rule" v={selectedAlert.rule_key} />
             <Field k="Source / entity" v={JSON.stringify(selectedAlert.entity)} mono />
             <Field k="Timestamp" v={selectedAlert.ts ? new Date(selectedAlert.ts).toLocaleString() : "—"} />
             <div className="col-span-2 sm:col-span-3">
-              <dt className="text-xs uppercase text-gray-500">Reason (ULPF, deterministic)</dt>
+              <dt className="label">Reason (ULPF, deterministic)</dt>
               <dd className="text-gray-300">{selectedAlert.reason}</dd>
             </div>
           </dl>
         )}
         {alertId && (
-          <Link to={`/assistant?alert=${alertId}`} className="btn-ghost mt-3 py-1 text-xs">
+          <Link to={`/assistant?alert=${alertId}`} className="btn-ghost mt-3 py-1.5 text-xs">
             <Sparkles className="h-3.5 w-3.5" /> Explain this alert with AI
           </Link>
         )}
-      </Card>
+      </div>
 
       {alertId && rec.isLoading && <Spinner label="Building recommendation…" />}
       {alertId && rec.isError && <ErrorState error={rec.error} onRetry={rec.refetch} />}
 
-      {rec.data && (
-        <RecommendationPanel data={rec.data} />
-      )}
+      {rec.data && <RecommendationPanel data={rec.data} />}
 
       {rec.data?.recommendation.available && (
         <>
-          {err && <div className="my-3"><ErrorState error={err} /></div>}
+          {err && (
+            <div className="my-3">
+              <ErrorState error={err} />
+            </div>
+          )}
           <div className="my-4">
             {hasRole("ANALYST") ? (
               <button className="btn-primary" disabled={run.isPending} onClick={() => run.mutate()}>
@@ -134,40 +145,38 @@ export default function ResponseSimulatorPage() {
 
       {sim && <SimulationResult sim={sim} />}
 
-      <h2 className="mb-2 mt-8 text-sm font-semibold text-gray-300">Simulation history</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-200">Simulation history</h2>
       {history.isLoading ? (
         <Spinner />
       ) : (history.data ?? []).length === 0 ? (
-        <p className="text-sm text-gray-500">No simulations recorded yet.</p>
+        <EmptyState title="No simulations recorded yet" hint="Select an alert and run a simulation to see it here." />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="py-2 pr-3">When</th>
-                <th className="py-2 pr-3">By</th>
-                <th className="py-2 pr-3">Alert</th>
-                <th className="py-2 pr-3">Category</th>
-                <th className="py-2 pr-3">Actions</th>
-                <th className="py-2 pr-3">Mode</th>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>By</th>
+              <th>Alert</th>
+              <th>Category</th>
+              <th>Actions</th>
+              <th>Mode</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(history.data ?? []).map((s) => (
+              <tr key={s.id}>
+                <td className="whitespace-nowrap text-xs text-gray-400">{relTime(s.ts)}</td>
+                <td className="text-xs">{s.actor_email}</td>
+                <td className="max-w-xs truncate">{s.alert_title}</td>
+                <td className="text-xs text-gray-400">{s.recommendation.category}</td>
+                <td className="font-mono text-2xs">{s.actions.map((a) => a.action).join(", ")}</td>
+                <td>
+                  <StatusPill status="simulation" label={s.simulation_only ? "SIMULATION_ONLY" : "?"} />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {(history.data ?? []).map((s) => (
-                <tr key={s.id} className="border-t border-base-border">
-                  <td className="py-2 pr-3 text-xs text-gray-400">{new Date(s.ts).toLocaleString()}</td>
-                  <td className="py-2 pr-3 text-xs">{s.actor_email}</td>
-                  <td className="max-w-xs truncate py-2 pr-3">{s.alert_title}</td>
-                  <td className="py-2 pr-3">{s.recommendation.category}</td>
-                  <td className="py-2 pr-3 font-mono text-xs">{s.actions.map((a) => a.action).join(", ")}</td>
-                  <td className="py-2 pr-3">
-                    <Badge tone="amber">{s.simulation_only ? "SIMULATION_ONLY" : "?"}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </DataTable>
       )}
     </div>
   );
@@ -177,20 +186,20 @@ function RecommendationPanel({ data }: { data: RecommendResponse }) {
   const r = data.recommendation;
   if (!r.available) {
     return (
-      <Card className="mb-4">
-        <h3 className="text-xs font-semibold uppercase text-gray-500">Recommended Response</h3>
+      <div className="surface bg-surface-sheen mb-4 p-4">
+        <SectionHeader title="Recommended response" />
         <p className="mt-1 text-sm text-gray-400">{r.label}</p>
         <p className="text-xs text-gray-600">{r.rationale}</p>
-      </Card>
+      </div>
     );
   }
   const primary = r.actions[0];
   return (
-    <Card className="mb-4 border-brand/30">
-      <h3 className="mb-1 text-xs font-semibold uppercase text-gray-500">Recommended Response</h3>
+    <div className="surface bg-surface-sheen mb-4 border-brand/25 p-4">
+      <SectionHeader title="Recommended response" right={<StatusPill status="simulation" />} />
       <div className="flex items-center gap-2">
         <span className="text-lg font-semibold text-brand-fg">{r.label}</span>
-        <Badge tone="slate">{r.category}</Badge>
+        <span className="badge bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25">{r.category}</span>
       </div>
       <p className="mt-1 text-sm text-gray-300">
         <span className="text-gray-500">Why: </span>
@@ -198,18 +207,22 @@ function RecommendationPanel({ data }: { data: RecommendResponse }) {
       </p>
 
       <div className="mt-3">
-        <h4 className="mb-1 text-xs font-semibold uppercase text-gray-500">Evidence (ULPF)</h4>
+        <div className="label">Evidence (ULPF)</div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
           {Object.entries(data.evidence.counts ?? {}).map(([k, v]) => (
-            <span key={k}>{k.replace(/_/g, " ")}: <b className="text-gray-200">{String(v)}</b></span>
+            <span key={k}>
+              {k.replace(/_/g, " ")}: <b className="text-gray-200">{String(v)}</b>
+            </span>
           ))}
           {(data.evidence.shield_verdicts ?? []).length > 0 && (
-            <span>shield: <b className="text-amber-300">{(data.evidence.shield_verdicts as string[]).join(", ")}</b></span>
+            <span>
+              shield: <b className="text-amber-300">{(data.evidence.shield_verdicts as string[]).join(", ")}</b>
+            </span>
           )}
         </div>
       </div>
 
-      <div className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+      <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-3">
         <div className="mb-2 flex items-center gap-2">
           <SimBadge />
           <span className="text-xs text-gray-400">structured action objects — representations only</span>
@@ -221,21 +234,21 @@ function RecommendationPanel({ data }: { data: RecommendResponse }) {
           <ActionTile label="Port" value={primary.port != null ? String(primary.port) : "—"} />
           <ActionTile label="Mode" value={primary.mode} />
           <div className="sm:col-span-3">
-            <div className="text-[10px] uppercase text-gray-500">Expected result</div>
+            <div className="label">Expected result</div>
             <div className="text-xs text-gray-300">{primary.detail}</div>
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
 function SimulationResult({ sim }: { sim: SimulateResponse }) {
   const p = sim.result.primary;
   return (
-    <Card className="my-4 border-emerald-500/30">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-bold uppercase text-emerald-300">
+    <div className="surface bg-surface-sheen my-4 border-emerald-500/25 p-4">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="badge bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">
           Simulation complete
         </span>
         <SimBadge />
@@ -245,19 +258,20 @@ function SimulationResult({ sim }: { sim: SimulateResponse }) {
 
       {p && (
         <>
-          <div className="mt-4 flex flex-col items-center gap-1 text-center text-sm">
-            <div className="rounded-md border border-base-border bg-base-panel px-4 py-2">
-              <div className="text-[10px] uppercase text-gray-500">Current state</div>
+          <div className="mt-4 flex flex-col items-center gap-1.5 text-center text-sm">
+            <div className="rounded-lg border border-base-border bg-base-panel px-4 py-2">
+              <div className="label">Current state</div>
               <div className="font-semibold text-emerald-300">{p.state_change.before}</div>
+              {p.target && <div className="text-2xs text-gray-500">{p.target}</div>}
             </div>
             <ArrowDown className="h-4 w-4 text-gray-700" />
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-amber-200">
-              <div className="text-[10px] uppercase">Simulated change</div>
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-amber-200">
+              <div className="label text-amber-300/80">Simulated change</div>
               <div className="font-mono text-xs">{p.kind}</div>
             </div>
             <ArrowDown className="h-4 w-4 text-gray-700" />
-            <div className="rounded-md border border-base-border bg-base-panel px-4 py-2">
-              <div className="text-[10px] uppercase text-gray-500">Simulated state</div>
+            <div className="rounded-lg border border-base-border bg-base-panel px-4 py-2">
+              <div className="label">Simulated state</div>
               <div className="font-semibold text-red-300">{p.state_change.after}</div>
             </div>
           </div>
@@ -268,20 +282,20 @@ function SimulationResult({ sim }: { sim: SimulateResponse }) {
           <details className="mt-3 text-xs">
             <summary className="cursor-pointer text-gray-500">before / after detail</summary>
             <div className="mt-1 grid gap-2 sm:grid-cols-2">
-              <pre className="overflow-x-auto rounded bg-base-bg p-2">before: {JSON.stringify(p.before, null, 1)}</pre>
-              <pre className="overflow-x-auto rounded bg-base-bg p-2">after: {JSON.stringify(p.after, null, 1)}</pre>
+              <pre className="overflow-x-auto rounded-lg bg-base-bg p-2">before: {JSON.stringify(p.before, null, 1)}</pre>
+              <pre className="overflow-x-auto rounded-lg bg-base-bg p-2">after: {JSON.stringify(p.after, null, 1)}</pre>
             </div>
           </details>
         </>
       )}
-    </Card>
+    </div>
   );
 }
 
 function Field({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
   return (
     <div>
-      <dt className="text-xs uppercase text-gray-500">{k}</dt>
+      <dt className="label">{k}</dt>
       <dd className={mono ? "truncate font-mono text-xs" : ""}>{v}</dd>
     </div>
   );
@@ -289,8 +303,8 @@ function Field({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }
 
 function ActionTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded border border-base-border p-2">
-      <div className="text-[10px] uppercase text-gray-500">{label}</div>
+    <div className="surface-2 p-2">
+      <div className="label">{label}</div>
       <div className="font-mono text-xs text-gray-200">{value}</div>
     </div>
   );

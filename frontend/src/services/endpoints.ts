@@ -19,8 +19,20 @@ export const createUser = (body: {
   full_name?: string;
 }) => api.post<User>("/users", body).then((r) => r.data);
 
-export const listAuditLogs = (params?: { action?: string; limit?: number }) =>
-  api.get("/users/audit-logs", { params }).then((r) => r.data);
+export interface AuditLogEntry {
+  id: string;
+  ts: string;
+  actor_email: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  detail: string;
+  ip_address: string | null;
+}
+export const listAuditLogs = (params?: { action?: string; limit?: number; offset?: number }) =>
+  api
+    .get<{ total: number; items: AuditLogEntry[] }>("/users/audit-logs", { params })
+    .then((r) => r.data);
 
 // --- sources ---
 export const listSources = () => api.get<LogSource[]>("/sources").then((r) => r.data);

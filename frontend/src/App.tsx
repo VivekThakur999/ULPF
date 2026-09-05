@@ -10,6 +10,9 @@ import IngestionPage from "@/pages/IngestionPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import LogExplorerPage from "@/pages/LogExplorerPage";
 import AlertsPage from "@/pages/AlertsPage";
+import IncidentsPage from "@/pages/IncidentsPage";
+import ProcessingJobsPage from "@/pages/ProcessingJobsPage";
+import AuditTrailPage from "@/pages/AuditTrailPage";
 import TemplatesPage from "@/pages/TemplatesPage";
 import CompressionPage from "@/pages/CompressionPage";
 import AssistantPage from "@/pages/AssistantPage";
@@ -18,6 +21,7 @@ import ResponseSimulatorPage from "@/pages/ResponseSimulatorPage";
 // Monaco-heavy pages are code-split so the main bundle stays lean.
 const PipelineDebuggerPage = lazy(() => import("@/pages/PipelineDebuggerPage"));
 const ParserPacksPage = lazy(() => import("@/pages/ParserPacksPage"));
+const AnalyticsPage = lazy(() => import("@/pages/AnalyticsPage"));
 
 const Lazy = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<div className="p-8"><Spinner /></div>}>{children}</Suspense>
@@ -35,18 +39,25 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="sources" element={<SourcesPage />} />
-        <Route path="ingestion" element={<IngestionPage />} />
         <Route path="explorer" element={<LogExplorerPage />} />
-        <Route path="debugger" element={<Lazy><PipelineDebuggerPage /></Lazy>} />
         <Route path="alerts" element={<AlertsPage />} />
-        <Route path="analytics" element={<Navigate to="/" replace />} />
+        <Route path="incidents" element={<IncidentsPage />} />
+
+        <Route path="ingestion" element={<IngestionPage />} />
+        <Route path="debugger" element={<Lazy><PipelineDebuggerPage /></Lazy>} />
         <Route path="parsers" element={<Lazy><ParserPacksPage /></Lazy>} />
-        <Route path="privacy" element={<PrivacyPage />} />
         <Route path="templates" element={<TemplatesPage />} />
         <Route path="compression" element={<CompressionPage />} />
-        <Route path="response" element={<ResponseSimulatorPage />} />
+
         <Route path="assistant" element={<AssistantPage />} />
+        <Route path="analytics" element={<Lazy><AnalyticsPage /></Lazy>} />
+
+        <Route path="response" element={<ResponseSimulatorPage />} />
+
+        <Route path="sources" element={<SourcesPage />} />
+        <Route path="jobs" element={<ProcessingJobsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="audit" element={<AuditTrailPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

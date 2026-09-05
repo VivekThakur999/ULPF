@@ -1,163 +1,167 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Database, FileWarning, Files, Layers, ShieldX, Zap } from "lucide-react";
-import { analyticsOverview, type AnalyticsOverview } from "@/services/endpoints";
-import { useAuth } from "@/hooks/useAuth";
-import { Badge, ErrorState, LiveDot, PageHeader, Spinner } from "@/components/ui";
-import { BarSeries, ChartCard, DonutSeries, TimeSeries } from "@/components/charts";
+import { Link } from "react-router-dom";
+import { Activity, AlertTriangle, Database, Gauge, ShieldCheck, ShieldX, Zap } from "lucide-react";
+import { analyticsOverview, listAlerts, searchLogs } from "@/services/endpoints";
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  Kpi,
+  KpiGrid,
+  LiveDot,
+  PageHeader,
+  SectionHeader,
+  SkeletonTable,
+  StatusPill,
+  relTime,
+} from "@/components/ui";
 import PipelineFlow from "@/components/PipelineFlow";
+import EventDetail from "@/components/EventDetail";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const q = useQuery({
+  const [eventId, setEventId] = useState<string | null>(null);
+
+  const overview = useQuery({
     queryKey: ["analytics-overview"],
     queryFn: analyticsOverview,
     refetchInterval: 10000,
   });
+  const alerts = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => listAlerts(),
+    refetchInterval: 20000,
+  });
+  const stream = useQuery({
+    queryKey: ["dashboard-stream"],
+    queryFn: () => searchLogs({ limit: 12 }),
+    refetchInterval: 15000,
+  });
+
+  const d = overview.data;
+  const items = alerts.data?.items ?? [];
+  const active = items.filter((a) => !["RESOLVED", "FALSE_POSITIVE"].includes(a.status)).length;
+  const highCrit = items.filter((a) => ["high", "critical"].includes(a.risk_breakdown.band)).length;
 
   return (
     <div>
       <PageHeader
-        title="Dashboard"
-        subtitle={`Signed in as ${user?.email} (${user?.role}). Every number on this page is queried live from the backend — nothing is hard-coded.`}
-        actions={<LiveDot label={q.data ? `updated ${new Date(q.data.generated_at).toLocaleTimeString()}` : "Live"} />}
+        eyebrow="Overview"
+        title="ULPF Command Center"
+        subtitle="Universal log preprocessing, correlation and security intelligence. Every figure on this page is queried live — nothing is hard-coded or simulated."
+        actions={
+          <LiveDot
+            label={d ? `updated ${new Date(d.generated_at).toLocaleTimeString()}` : "Live"}
+          />
+        }
       />
+
+      <div className="mb-6">
+        {overview.isError ? (
+          <ErrorState error={overview.error} onRetry={overview.refetch} />
+        ) : (
+          <KpiGrid>
+            <Kpi label="Events processed" value={(d?.cards.processed ?? 0).toLocaleString()} icon={Database} loading={overview.isLoading} />
+            <Kpi
+              label="Events / sec"
+              value={(d?.cards.avg_processing_rate ?? 0).toFixed(0)}
+              sub={d ? `peak ${d.cards.peak_processing_rate.toFixed(0)}/s` : undefined}
+              icon={Zap}
+              loading={overview.isLoading}
+            />
+            <Kpi
+              label="Active alerts"
+              value={active}
+              status={active ? "investigating" : "safe"}
+              icon={AlertTriangle}
+              loading={alerts.isLoading}
+            />
+            <Kpi
+              label="High / critical"
+              value={highCrit}
+              status={highCrit ? "high" : "safe"}
+              icon={AlertTriangle}
+              loading={alerts.isLoading}
+            />
+            <Kpi
+              label="Shield events"
+              value={(d?.shield_events ?? 0).toLocaleString()}
+              status={(d?.shield_events ?? 0) > 0 ? "medium" : "safe"}
+              icon={ShieldX}
+              loading={overview.isLoading}
+            />
+            <Kpi label="Sources" value={d?.source_status.length ?? 0} icon={Database} loading={overview.isLoading} />
+            <Kpi label="Normalized events" value={(d?.cards.normalized_events ?? 0).toLocaleString()} icon={Gauge} loading={overview.isLoading} />
+            <Kpi
+              label="Processing success"
+              value={d ? `${d.processing_success_rate}%` : "—"}
+              status={d ? (d.processing_success_rate >= 95 ? "safe" : d.processing_success_rate >= 80 ? "medium" : "high") : undefined}
+              icon={ShieldCheck}
+              loading={overview.isLoading}
+            />
+          </KpiGrid>
+        )}
+      </div>
 
       <div className="mb-6">
         <PipelineFlow />
       </div>
 
-      {q.isLoading ? (
-        <Spinner label="Loading dashboard…" />
-      ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={q.refetch} />
-      ) : (
-        <DashboardBody data={q.data!} />
-      )}
-    </div>
-  );
-}
-
-function DashboardBody({ data: d }: { data: AnalyticsOverview }) {
-  const cards = [
-    { label: "Total Logs", value: d.cards.total_logs, icon: Files },
-    { label: "Processed", value: d.cards.processed, icon: Layers },
-    { label: "Invalid", value: d.cards.invalid, icon: FileWarning },
-    { label: "Duplicates", value: d.cards.duplicates, icon: Files },
-    { label: "Quarantined", value: d.cards.quarantined, icon: ShieldX },
-    { label: "Normalized Events", value: d.cards.normalized_events, icon: Database },
-    { label: "Alerts", value: d.cards.alerts, icon: AlertTriangle },
-    {
-      label: "Processing Rate",
-      value: `${d.cards.avg_processing_rate.toFixed(0)}/s`,
-      sub: `peak ${d.cards.peak_processing_rate.toFixed(0)}/s`,
-      icon: Zap,
-    },
-  ];
-
-  const hasAnyData = d.cards.total_logs > 0;
-
-  return (
-    <>
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <div key={c.label} className="card transition hover:border-brand/40">
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wide text-gray-400">{c.label}</span>
-              <c.icon className="h-4 w-4 text-gray-600" />
-            </div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums">{c.value}</div>
-            {c.sub && <div className="text-xs text-gray-500">{c.sub}</div>}
-          </div>
-        ))}
-      </div>
-
-      <div className="mb-3 flex flex-wrap gap-4 text-xs text-gray-400">
-        <span>
-          Processing success rate:{" "}
-          <span className="font-semibold text-gray-200">{d.processing_success_rate}%</span>
-        </span>
-        <span>
-          Security-shield events:{" "}
-          <span className="font-semibold text-gray-200">{d.shield_events}</span>
-        </span>
-      </div>
-
-      {!hasAnyData && (
-        <div className="mb-6 rounded-lg border border-dashed border-base-border p-6 text-center">
-          <p className="text-sm text-gray-300">No logs ingested yet.</p>
-          <p className="mt-1 text-xs text-gray-500">
-            Go to <b>Ingestion</b> to upload a file, import a synthetic sample, or run the SIH Demo.
-          </p>
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <ChartCard title="Events over time">
-          <TimeSeries data={d.charts.events_over_time} />
-        </ChartCard>
-        <ChartCard title="Logs by source">
-          <BarSeries data={d.charts.logs_by_source} />
-        </ChartCard>
-        <ChartCard title="Logs by format">
-          <BarSeries data={d.charts.logs_by_format} />
-        </ChartCard>
-        <ChartCard title="Events by severity">
-          <DonutSeries data={d.charts.events_by_severity} />
-        </ChartCard>
-        <ChartCard title="Events by type">
-          <BarSeries data={d.charts.events_by_type} />
-        </ChartCard>
-        <ChartCard title="Processing outcomes">
-          <DonutSeries data={d.charts.processing_outcomes} />
-        </ChartCard>
-        <ChartCard title="PII transformations">
-          <DonutSeries data={d.charts.pii_transformations} />
-        </ChartCard>
-        <ChartCard title="Alerts by severity">
-          <BarSeries data={d.charts.alerts_by_severity} colorByLabel />
-        </ChartCard>
-        <ChartCard title="Risk distribution">
-          <BarSeries data={d.charts.risk_distribution} colorByLabel />
-        </ChartCard>
-      </div>
-
-      <h2 className="mb-2 mt-8 text-sm font-semibold text-gray-300">Source status</h2>
-      {d.source_status.length === 0 ? (
-        <p className="text-sm text-gray-500">
-          No sources yet — upload a file or import a sample on the Ingestion page.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
+      <div>
+        <SectionHeader
+          title="Live event stream"
+          hint="The most recent normalized events across every source"
+          right={
+            <Link to="/explorer" className="text-2xs text-brand-fg hover:underline">
+              Open Log Explorer →
+            </Link>
+          }
+        />
+        {stream.isLoading ? (
+          <SkeletonTable rows={6} cols={6} />
+        ) : stream.isError ? (
+          <ErrorState error={stream.error} onRetry={stream.refetch} />
+        ) : (stream.data?.items.length ?? 0) === 0 ? (
+          <EmptyState
+            icon={Activity}
+            title="No events yet"
+            hint="Ingest a file or import a sample on the Ingestion page — new events will surface here automatically."
+          />
+        ) : (
+          <DataTable>
+            <thead>
               <tr>
-                <th className="py-2 pr-4">Source</th>
-                <th className="py-2 pr-4">Category</th>
-                <th className="py-2 pr-4">Adapter</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4">Events</th>
-                <th className="py-2 pr-4">Last received</th>
+                <th>Time</th>
+                <th>Source</th>
+                <th>Event type</th>
+                <th>Host</th>
+                <th>Identity</th>
+                <th>Source IP</th>
+                <th>Severity</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {d.source_status.map((s) => (
-                <tr key={s.name} className="border-t border-base-border">
-                  <td className="py-2 pr-4 font-medium">{s.name}</td>
-                  <td className="py-2 pr-4 text-gray-400">{s.category}</td>
-                  <td className="py-2 pr-4">{s.adapter}</td>
-                  <td className="py-2 pr-4">
-                    <Badge tone={s.status === "RECEIVING" ? "green" : "slate"}>{s.status}</Badge>
+              {stream.data!.items.map((e) => (
+                <tr key={e.id} className="clickable" onClick={() => setEventId(e.id)}>
+                  <td className="whitespace-nowrap text-xs text-gray-400" title={e.timestamp ?? ""}>
+                    {relTime(e.timestamp)}
                   </td>
-                  <td className="py-2 pr-4 tabular-nums">{s.events_processed}</td>
-                  <td className="py-2 pr-4 text-gray-400">
-                    {s.last_received ? new Date(s.last_received).toLocaleString() : "—"}
-                  </td>
+                  <td className="text-xs text-gray-300">{e.source}</td>
+                  <td className="text-xs">{e.event_type ?? "—"}</td>
+                  <td className="text-xs text-gray-400">{e.host ?? "—"}</td>
+                  <td className="font-mono text-2xs text-gray-400">{e.username ?? e.email ?? "—"}</td>
+                  <td className="font-mono text-2xs text-gray-400">{e.source_ip ?? "—"}</td>
+                  <td>{e.severity ? <StatusPill status={e.severity} /> : "—"}</td>
+                  <td>{e.processing_status ? <StatusPill status={e.processing_status} dot={false} /> : "—"}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      )}
-    </>
+          </DataTable>
+        )}
+      </div>
+
+      {eventId && <EventDetail eventId={eventId} onClose={() => setEventId(null)} />}
+    </div>
   );
 }

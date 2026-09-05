@@ -66,6 +66,7 @@ export default function PipelineDebuggerPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Pipeline"
         title="Live Pipeline Debugger"
         subtitle="Paste a raw log line and run it through the exact pipeline used during ingestion. Nothing is persisted."
         actions={

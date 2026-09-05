@@ -1,28 +1,25 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
-import {
-  createSource,
-  deleteSource,
-  listAdapters,
-  listSources,
-} from "@/services/endpoints";
+import { createSource, deleteSource, listAdapters, listSources } from "@/services/endpoints";
 import { apiError } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Badge,
   Card,
+  DataTable,
   EmptyState,
   ErrorState,
+  Kpi,
+  KpiGrid,
   LiveDot,
   PageHeader,
-  Spinner,
-  statusTone,
+  SectionHeader,
+  SkeletonTable,
+  StatusPill,
+  relTime,
 } from "@/components/ui";
 
-const CATEGORIES = [
-  "linux", "windows", "apache", "nginx", "firewall", "network", "application", "generic",
-];
+const CATEGORIES = ["linux", "windows", "apache", "nginx", "firewall", "network", "application", "generic"];
 
 export default function SourcesPage() {
   const { hasRole } = useAuth();
@@ -38,19 +35,36 @@ export default function SourcesPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["sources"] }),
   });
 
+  const items = sources.data ?? [];
+  const receiving = items.filter((s) => s.connection_status === "RECEIVING").length;
+  const totalEvents = items.reduce((a, s) => a + s.events_processed, 0);
+
   return (
     <div>
       <PageHeader
+        eyebrow="System"
         title="Log Sources"
-        subtitle="Configure where logs come from. The MVP genuinely supports file upload, sample import and a simulated stream; enterprise connectors expose the interface but report NOT_CONFIGURED until wired up."
+        subtitle="Where logs come from. The MVP genuinely supports file upload, sample import and a simulated stream; enterprise connectors expose the interface but report NOT_CONFIGURED until wired up."
         actions={
-          isAdmin && (
-            <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
-              <Plus className="h-4 w-4" /> New source
-            </button>
-          )
+          <div className="flex items-center gap-3">
+            <LiveDot />
+            {isAdmin && (
+              <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
+                <Plus className="h-4 w-4" /> New source
+              </button>
+            )}
+          </div>
         }
       />
+
+      <div className="mb-5">
+        <KpiGrid>
+          <Kpi label="Sources" value={items.length} loading={sources.isLoading} />
+          <Kpi label="Receiving" value={receiving} status={receiving ? "online" : "idle"} loading={sources.isLoading} />
+          <Kpi label="Events processed" value={totalEvents.toLocaleString()} loading={sources.isLoading} />
+          <Kpi label="Adapters available" value={adapters.data?.filter((a) => a.mvp_supported).length ?? 0} />
+        </KpiGrid>
+      </div>
 
       {showForm && isAdmin && (
         <SourceForm
@@ -61,77 +75,75 @@ export default function SourcesPage() {
         />
       )}
 
-      <div className="mb-2 mt-2 flex items-center gap-3">
-        <h2 className="text-sm font-semibold text-gray-300">Configured sources</h2>
-        <LiveDot />
-      </div>
+      <SectionHeader title="Configured sources" />
       {sources.isLoading ? (
-        <Spinner />
+        <SkeletonTable rows={4} cols={6} />
       ) : sources.isError ? (
         <ErrorState error={sources.error} onRetry={sources.refetch} />
-      ) : sources.data && sources.data.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Category</th>
-                <th className="py-2 pr-4">Adapter</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4">Events</th>
-                <th className="py-2 pr-4">Last received</th>
-                {isAdmin && <th />}
+      ) : items.length > 0 ? (
+        <DataTable>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Adapter</th>
+              <th>Status</th>
+              <th className="text-right">Events</th>
+              <th>Last activity</th>
+              {isAdmin && <th />}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((s) => (
+              <tr key={s.id}>
+                <td className="font-medium text-gray-200">{s.name}</td>
+                <td className="text-gray-400">{s.category}</td>
+                <td className="text-gray-400">{s.adapter}</td>
+                <td>
+                  <StatusPill status={s.connection_status} />
+                </td>
+                <td className="text-right tnum">{s.events_processed.toLocaleString()}</td>
+                <td className="text-xs text-gray-500">{relTime(s.last_received_at)}</td>
+                {isAdmin && (
+                  <td className="text-right">
+                    <button
+                      className="text-gray-500 hover:text-sev-critical"
+                      onClick={() => del.mutate(s.id)}
+                      aria-label={`Delete ${s.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                )}
               </tr>
-            </thead>
-            <tbody>
-              {sources.data.map((s) => (
-                <tr key={s.id} className="border-t border-base-border">
-                  <td className="py-2 pr-4 font-medium">{s.name}</td>
-                  <td className="py-2 pr-4 text-gray-400">{s.category}</td>
-                  <td className="py-2 pr-4">{s.adapter}</td>
-                  <td className="py-2 pr-4">
-                    <Badge tone={s.connection_status === "CONFIGURED" ? "slate" : statusTone(s.connection_status)}>
-                      {s.connection_status}
-                    </Badge>
-                  </td>
-                  <td className="py-2 pr-4 tabular-nums">{s.events_processed}</td>
-                  <td className="py-2 pr-4 text-gray-400">
-                    {s.last_received_at ? new Date(s.last_received_at).toLocaleString() : "—"}
-                  </td>
-                  {isAdmin && (
-                    <td className="py-2 text-right">
-                      <button
-                        className="text-gray-500 hover:text-sev-critical"
-                        onClick={() => del.mutate(s.id)}
-                        title="Delete source"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </DataTable>
       ) : (
-        <EmptyState title="No sources configured" hint={isAdmin ? "Create one above, or just upload a file on the Ingestion page." : "Ask an admin to add a source."} />
+        <EmptyState
+          title="No sources configured"
+          hint={isAdmin ? "Create one above, or just upload a file on the Ingestion page." : "Ask an admin to add a source."}
+        />
       )}
 
-      <h2 className="mb-2 mt-8 text-sm font-semibold text-gray-300">Adapter catalog</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {adapters.data?.map((a) => (
-          <Card key={a.kind}>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{a.kind}</span>
-              <Badge tone={a.mvp_supported ? "green" : "slate"}>
-                {a.mvp_supported ? "MVP READY" : a.status}
-              </Badge>
-            </div>
-            <p className="mt-2 text-xs text-gray-400">{a.detail}</p>
-            <p className="mt-1 text-xs text-gray-600">Needs: {a.requires}</p>
-          </Card>
-        ))}
+      <div className="mt-8">
+        <SectionHeader title="Adapter catalog" hint="Connector interfaces ULPF exposes" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {adapters.data?.map((a) => (
+            <Card key={a.kind}>
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-200">{a.kind}</span>
+                <StatusPill
+                  status={a.mvp_supported ? "online" : "idle"}
+                  label={a.mvp_supported ? "MVP READY" : a.status}
+                  dot={false}
+                />
+              </div>
+              <p className="mt-2 text-xs text-gray-400">{a.detail}</p>
+              <p className="mt-1 text-2xs text-gray-600">Needs: {a.requires}</p>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -175,20 +187,12 @@ function SourceForm({ onDone }: { onDone: () => void }) {
         </div>
         <div>
           <label className="label">Description</label>
-          <input
-            className="input"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
       </div>
       {err && <p className="mt-2 text-sm text-sev-critical">{err}</p>}
       <div className="mt-3 flex gap-2">
-        <button
-          className="btn-primary"
-          disabled={!name || create.isPending}
-          onClick={() => create.mutate()}
-        >
+        <button className="btn-primary" disabled={!name || create.isPending} onClick={() => create.mutate()}>
           Create
         </button>
         <button className="btn-ghost" onClick={onDone}>

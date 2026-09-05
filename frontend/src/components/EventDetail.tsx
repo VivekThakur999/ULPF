@@ -2,10 +2,16 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ArrowRight, FileText, ShieldCheck, Sparkles } from "lucide-react";
-import { getLogDetail } from "@/services/endpoints";
-import { Badge, ErrorState, Spinner, verdictTone } from "@/components/ui";
-import { severityClass } from "@/utils/severity";
-import type { UniversalEvent } from "@/services/endpoints";
+import { getLogDetail, type UniversalEvent } from "@/services/endpoints";
+import {
+  Badge,
+  Drawer,
+  ErrorState,
+  SectionHeader,
+  Spinner,
+  StatusPill,
+  Tabs,
+} from "@/components/ui";
 
 const STAGE_LABEL: Record<string, string> = {
   security_shield: "Security Shield",
@@ -18,152 +24,139 @@ const STAGE_LABEL: Record<string, string> = {
   validation: "Validation",
 };
 
-const stageTone = (s: string) =>
-  s === "error" ? "red" : s === "warn" ? "amber" : s === "skipped" ? "slate" : "green";
+type Tab = "universal" | "raw" | "pipeline" | "related";
 
 export default function EventDetail({ eventId, onClose }: { eventId: string; onClose: () => void }) {
   const q = useQuery({ queryKey: ["log", eventId], queryFn: () => getLogDetail(eventId) });
-  const [tab, setTab] = useState<"universal" | "raw" | "pipeline" | "related">("universal");
+  const [tab, setTab] = useState<Tab>("universal");
+  const ev = q.data?.event;
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/50" onClick={onClose}>
-      <div
-        className="h-full w-full max-w-2xl overflow-y-auto border-l border-base-border bg-base-panel p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {q.isLoading ? (
-          <Spinner label="Loading event…" />
-        ) : q.isError || !q.data ? (
-          <ErrorState error={q.error ?? "Event not found"} onRetry={q.refetch} />
-        ) : (
-          <>
-            <div className="mb-4 flex items-start justify-between">
-              <div>
-                <h2 className="font-semibold">
-                  {q.data.event.event_type ?? "event"}{" "}
-                  <span className="text-gray-500">· {q.data.event.source}</span>
-                </h2>
-                <p className="text-xs text-gray-500">{q.data.event.id}</p>
+    <Drawer
+      open
+      onClose={onClose}
+      width="max-w-2xl"
+      title={ev ? `${ev.event_type ?? "event"} · ${ev.source}` : "Event"}
+      subtitle={ev?.id}
+      actions={
+        ev && (
+          <Link
+            to={`/assistant?event=${ev.id}`}
+            className="btn-ghost py-1.5 text-xs"
+            onClick={onClose}
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Explain with AI
+          </Link>
+        )
+      }
+    >
+      {q.isLoading ? (
+        <Spinner label="Loading event…" />
+      ) : q.isError || !q.data ? (
+        <ErrorState error={q.error ?? "Event not found"} onRetry={q.refetch} />
+      ) : (
+        <>
+          <TransformFlow event={q.data.event} />
+
+          <div className="mb-3">
+            <Tabs<Tab>
+              tabs={[
+                { key: "universal", label: "Universal Event" },
+                { key: "raw", label: "Raw Log" },
+                { key: "pipeline", label: "Pipeline" },
+                { key: "related", label: `Correlation (${q.data.related_events.length})` },
+              ]}
+              value={tab}
+              onChange={setTab}
+            />
+          </div>
+
+          {tab === "universal" && <UniversalView e={q.data.event} pii={q.data.pii_transformations} />}
+
+          {tab === "raw" && (
+            <div className="space-y-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill status={q.data.raw_log?.security_verdict ?? "SAFE"} />
+                {q.data.job && <Badge tone="blue">{q.data.job.detected_format}</Badge>}
+                <span className="text-xs text-gray-500">
+                  line {q.data.raw_log?.line_number} · {q.data.job?.filename}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  to={`/assistant?event=${q.data.event.id}`}
-                  className="btn-ghost py-1 text-xs"
-                  onClick={onClose}
-                >
-                  <Sparkles className="h-3.5 w-3.5" /> Explain with AI
-                </Link>
-                <button className="btn-ghost py-1 text-xs" onClick={onClose}>
-                  Close
-                </button>
-              </div>
+              <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg border border-base-border bg-base-bg p-3 font-mono text-xs text-gray-200">
+                {q.data.raw_log?.content ?? q.data.event.raw_log}
+              </pre>
+              {q.data.security_events.length > 0 && (
+                <div className="rounded-lg border border-sev-high/40 bg-sev-high/10 p-2 text-xs">
+                  {q.data.security_events.map((s) => (
+                    <div key={s.id}>
+                      <b>{s.detection_type}</b> ({s.severity}) — {s.reason}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          )}
 
-            <TransformFlow event={q.data.event} />
+          {tab === "pipeline" && (
+            <ol className="space-y-2 text-sm">
+              {q.data.pipeline.map((s, i) => (
+                <li key={s.stage} className="surface-2 p-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-2xs text-gray-500">{i + 1}</span>
+                    <span className="font-medium text-gray-200">{STAGE_LABEL[s.stage] ?? s.stage}</span>
+                    <StatusPill
+                      status={s.status === "warn" ? "medium" : s.status === "error" ? "failed" : s.status === "skipped" ? "idle" : "ok"}
+                      label={s.status}
+                      dot={false}
+                    />
+                    <span className="text-xs text-gray-400">{s.summary}</span>
+                  </div>
+                  {s.transformations.length > 0 && (
+                    <ul className="ml-6 mt-1 list-disc text-xs text-gray-400">
+                      {s.transformations.map((t, j) => (
+                        <li key={j}>{Object.entries(t).map(([k, v]) => `${k}=${v}`).join(" ")}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {s.warnings.map((w, j) => (
+                    <p key={j} className="ml-6 text-xs text-sev-medium">⚠ {w}</p>
+                  ))}
+                  {s.errors.map((w, j) => (
+                    <p key={j} className="ml-6 text-xs text-sev-critical">✖ {w}</p>
+                  ))}
+                </li>
+              ))}
+            </ol>
+          )}
 
-            <div className="mb-3 flex gap-2 border-b border-base-border text-sm">
-              {(["universal", "raw", "pipeline", "related"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`px-2 py-1.5 capitalize ${
-                    tab === t ? "border-b-2 border-brand text-brand-fg" : "text-gray-400"
-                  }`}
-                >
-                  {t === "related" ? `Related (${q.data.related_events.length})` : t}
-                </button>
+          {tab === "related" && (
+            <div className="space-y-1.5 text-sm">
+              {q.data.related_events.length === 0 && (
+                <p className="text-gray-500">No correlated events.</p>
+              )}
+              {q.data.related_events.map((e) => (
+                <div key={e.id} className="surface-2 flex flex-wrap items-center gap-2 p-2 text-xs">
+                  <span className="text-gray-500">
+                    {e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "—"}
+                  </span>
+                  <Badge tone="slate">{e.source}</Badge>
+                  <span className="text-gray-300">{e.event_type}</span>
+                  <span className="text-gray-400">{e.host}</span>
+                  <span className="ml-auto font-mono text-gray-500">{e.source_ip}</span>
+                </div>
               ))}
             </div>
-
-            {tab === "universal" && <UniversalView e={q.data.event} pii={q.data.pii_transformations} />}
-
-            {tab === "raw" && (
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Badge tone={verdictTone(q.data.raw_log?.security_verdict ?? "SAFE")}>
-                    {q.data.raw_log?.security_verdict ?? "SAFE"}
-                  </Badge>
-                  {q.data.job && <Badge tone="blue">{q.data.job.detected_format}</Badge>}
-                  <span className="text-xs text-gray-500">
-                    line {q.data.raw_log?.line_number} · {q.data.job?.filename}
-                  </span>
-                </div>
-                <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded border border-base-border bg-base-bg p-3 font-mono text-xs text-gray-200">
-                  {q.data.raw_log?.content ?? q.data.event.raw_log}
-                </pre>
-                {q.data.security_events.length > 0 && (
-                  <div className="rounded border border-sev-high/40 bg-sev-high/10 p-2 text-xs">
-                    {q.data.security_events.map((s) => (
-                      <div key={s.id}>
-                        <b>{s.detection_type}</b> ({s.severity}) — {s.reason}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {tab === "pipeline" && (
-              <ol className="space-y-2 text-sm">
-                {q.data.pipeline.map((s, i) => (
-                  <li key={s.stage} className="rounded border border-base-border p-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">{i + 1}</span>
-                      <span className="font-medium">{STAGE_LABEL[s.stage] ?? s.stage}</span>
-                      <Badge tone={stageTone(s.status)}>{s.status}</Badge>
-                      <span className="text-xs text-gray-400">{s.summary}</span>
-                    </div>
-                    {s.transformations.length > 0 && (
-                      <ul className="mt-1 ml-6 list-disc text-xs text-gray-400">
-                        {s.transformations.map((t, j) => (
-                          <li key={j}>{Object.entries(t).map(([k, v]) => `${k}=${v}`).join(" ")}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {s.warnings.map((w, j) => (
-                      <p key={j} className="ml-6 text-xs text-sev-medium">
-                        ⚠ {w}
-                      </p>
-                    ))}
-                    {s.errors.map((w, j) => (
-                      <p key={j} className="ml-6 text-xs text-sev-critical">
-                        ✖ {w}
-                      </p>
-                    ))}
-                  </li>
-                ))}
-              </ol>
-            )}
-
-            {tab === "related" && (
-              <div className="space-y-1.5 text-sm">
-                {q.data.related_events.length === 0 && (
-                  <p className="text-gray-500">No correlated events.</p>
-                )}
-                {q.data.related_events.map((e) => (
-                  <div key={e.id} className="flex items-center gap-2 rounded border border-base-border p-2 text-xs">
-                    <span className="text-gray-500">
-                      {e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "—"}
-                    </span>
-                    <Badge tone="slate">{e.source}</Badge>
-                    <span>{e.event_type}</span>
-                    <span className="text-gray-400">{e.host}</span>
-                    <span className="ml-auto font-mono text-gray-500">{e.source_ip}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+          )}
+        </>
+      )}
+    </Drawer>
   );
 }
 
 /** Makes "raw log -> pipeline -> universal event" visually obvious at a glance. */
 function TransformFlow({ event }: { event: UniversalEvent }) {
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-base-border bg-base-bg/50 p-2.5 text-xs">
+    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-base-border bg-base-bg/50 p-2.5 text-xs">
       <div className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1">
         <FileText className="h-3.5 w-3.5 text-gray-500" />
         Raw Log
@@ -220,43 +213,41 @@ function UniversalView({
   }).filter(([, v]) => v !== null && v !== undefined && v !== "");
 
   return (
-    <div className="space-y-3 text-sm">
+    <div className="space-y-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        {e.severity && <span className={`badge ${severityClass(e.severity)}`}>{e.severity}</span>}
+        {e.severity && <StatusPill status={e.severity} />}
         <Badge tone="blue">{e.parser} v{e.parser_version}</Badge>
         <Badge tone="slate">schema {e.schema_version}</Badge>
         <Badge tone={e.pii_protected ? "green" : "slate"}>PII {e.pii_mode}</Badge>
         <Badge tone="slate">confidence {(e.confidence * 100).toFixed(0)}%</Badge>
       </div>
 
-      <table className="w-full">
-        <tbody>
-          {rows.map(([k, v]) => (
-            <tr key={k} className="border-b border-base-border/50">
-              <td className="py-1 pr-4 text-gray-500">{k}</td>
-              <td className="py-1 font-mono text-xs">
-                {String(v)}
-                {e.field_confidence[k] !== undefined && (
-                  <span className="ml-2 text-[10px] text-gray-600">
-                    {(e.field_confidence[k] * 100).toFixed(0)}%
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-3 border-b border-base-border/50 py-1">
+            <span className="text-gray-500">{k}</span>
+            <span className="truncate text-right font-mono text-xs text-gray-200">
+              {String(v)}
+              {e.field_confidence[k] !== undefined && (
+                <span className="ml-2 text-2xs text-gray-600">
+                  {(e.field_confidence[k] * 100).toFixed(0)}%
+                </span>
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {e.message && (
         <div>
-          <div className="label">message</div>
-          <p className="rounded border border-base-border bg-base-bg p-2 text-xs">{e.message}</p>
+          <SectionHeader title="Message" />
+          <p className="rounded-lg border border-base-border bg-base-bg p-2 text-xs">{e.message}</p>
         </div>
       )}
 
       {pii.length > 0 && (
         <div>
-          <div className="label">PII transformations</div>
+          <SectionHeader title="PII transformations" />
           <ul className="text-xs text-gray-400">
             {pii.map((t, i) => (
               <li key={i}>
@@ -270,7 +261,7 @@ function UniversalView({
       {Object.keys(e.extra).length > 0 && (
         <details className="text-xs">
           <summary className="cursor-pointer text-gray-500">extra ({Object.keys(e.extra).length})</summary>
-          <pre className="mt-1 overflow-x-auto rounded border border-base-border bg-base-bg p-2">
+          <pre className="mt-1 overflow-x-auto rounded-lg border border-base-border bg-base-bg p-2">
             {JSON.stringify(e.extra, null, 2)}
           </pre>
         </details>

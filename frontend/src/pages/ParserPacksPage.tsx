@@ -13,7 +13,7 @@ import {
 } from "@/services/endpoints";
 import { apiError } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
-import { Badge, Card, ErrorState, PageHeader, Spinner } from "@/components/ui";
+import { Badge, Card, DataTable, ErrorState, PageHeader, SkeletonTable, Spinner, StatusPill } from "@/components/ui";
 
 const KIND_TONE: Record<string, "green" | "blue" | "amber" | "slate"> = {
   builtin: "slate",
@@ -35,6 +35,7 @@ export default function ParserPacksPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Pipeline"
         title="Parser Packs"
         subtitle="Built-in parsers (in code) + declarative YAML packs + sandboxed WASM parsers. Packs are pure data — no pack code is ever executed."
         actions={
@@ -50,10 +51,11 @@ export default function ParserPacksPage() {
         <Card className="mb-4">
           <div className="flex items-center gap-2 text-sm">
             <Package className="h-4 w-4 text-brand-fg" />
-            <span className="font-medium">WASM sandbox:</span>
-            <Badge tone={wasm.data.available ? "green" : "red"}>
-              {wasm.data.available ? `available (${wasm.data.runtime})` : "unavailable"}
-            </Badge>
+            <span className="font-medium text-gray-200">WASM sandbox</span>
+            <StatusPill
+              status={wasm.data.available ? "online" : "error"}
+              label={wasm.data.available ? `available (${wasm.data.runtime})` : "unavailable"}
+            />
           </div>
           {wasm.data.available && (
             <ul className="mt-2 grid gap-1 text-xs text-gray-400 sm:grid-cols-2">
@@ -66,42 +68,36 @@ export default function ParserPacksPage() {
       )}
 
       {parsers.isLoading ? (
-        <Spinner />
+        <SkeletonTable rows={8} cols={5} />
       ) : parsers.isError ? (
         <ErrorState error={parsers.error} onRetry={parsers.refetch} />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Format</th>
-                <th className="py-2 pr-4">Version</th>
-                <th className="py-2 pr-4">Kind</th>
-                <th className="py-2 pr-4">Patterns</th>
-                <th className="py-2 pr-4">Description</th>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Format</th>
+              <th>Version</th>
+              <th>Kind</th>
+              <th className="text-right">Patterns</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {parsers.data!.map((p) => (
+              <tr key={p.name} className="clickable" onClick={() => setSelected(p.name)}>
+                <td className="font-medium text-gray-200">{p.name}</td>
+                <td className="font-mono text-xs">{p.format}</td>
+                <td className="tnum">{p.version}</td>
+                <td>
+                  <Badge tone={KIND_TONE[p.kind] ?? "slate"}>{p.kind}</Badge>
+                </td>
+                <td className="text-right tnum">{p.pattern_count ?? "—"}</td>
+                <td className="max-w-sm truncate text-gray-400">{p.description}</td>
               </tr>
-            </thead>
-            <tbody>
-              {parsers.data!.map((p) => (
-                <tr
-                  key={p.name}
-                  className="cursor-pointer border-t border-base-border hover:bg-white/5"
-                  onClick={() => setSelected(p.name)}
-                >
-                  <td className="py-2 pr-4 font-medium">{p.name}</td>
-                  <td className="py-2 pr-4 font-mono text-xs">{p.format}</td>
-                  <td className="py-2 pr-4">{p.version}</td>
-                  <td className="py-2 pr-4">
-                    <Badge tone={KIND_TONE[p.kind] ?? "slate"}>{p.kind}</Badge>
-                  </td>
-                  <td className="py-2 pr-4 tabular-nums">{p.pattern_count ?? "—"}</td>
-                  <td className="py-2 pr-4 text-gray-400">{p.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </DataTable>
       )}
 
       {selected && <ParserDrawer name={selected} onClose={() => setSelected(null)} />}
@@ -315,15 +311,22 @@ function CreatePackDrawer({ onClose }: { onClose: () => void }) {
 
 function Drawer({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/50" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-[2px]"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
       <div
-        className="h-full w-full max-w-2xl overflow-y-auto border-l border-base-border bg-base-panel p-6"
+        className="flex h-full w-full max-w-2xl animate-slide-in-right flex-col border-l border-base-border bg-base-panel shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="btn-ghost mb-3 py-1 text-xs" onClick={onClose}>
-          Close
-        </button>
-        {children}
+        <div className="flex justify-end border-b border-base-border px-5 py-3">
+          <button className="btn-ghost py-1 text-xs" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>
     </div>
   );
