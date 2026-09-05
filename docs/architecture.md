@@ -94,6 +94,29 @@ counts, `normalized_events` facets, `processing_jobs.processing_rate`,
 `GET /api/analytics/pipeline` maps each pipeline stage to a real count from the
 same tables for the Dashboard's interactive pipeline story.
 
+## 5d. AI explanation layer (optional)
+
+`services/ai/` — AI is strictly an **explanation** layer. Detection, severity,
+risk, correlation and alerting are always decided by the deterministic engine;
+AI only describes those results.
+
+- `AIProvider` interface. `LightweightOfflineProvider` is the default: a
+  deterministic, template-based explainer (**not** a language model) that
+  arranges the given ULPF evidence into Summary / Important Fields / Why It
+  Matters / Detection Context / Related Activity / Suggested Steps. Same input
+  → same output, zero network calls.
+- `OllamaProvider` is optional. If `AI_PROVIDER=ollama` and a local Ollama
+  server + model are reachable, it is used with a strict system prompt and the
+  evidence placed in a fenced data block; on any failure/timeout it falls back
+  to the offline provider. It never downloads a model and only ever contacts
+  `OLLAMA_BASE_URL` (default `http://localhost:11434`). No cloud AI is ever
+  contacted; there is no OpenAI/Anthropic dependency.
+- `POST /api/ai/explain` accepts only record identifiers (`event_id` /
+  `alert_id`) or pasted `text`; all security-relevant fields are retrieved
+  server-side, so an explanation can never be seeded with fabricated evidence.
+  The response returns the authoritative `evidence` block separately from the
+  advisory `explanation`. See [security-model.md](security-model.md#ai-explanation-layer).
+
 ## 5c. Template mining & micro-compression
 
 `services/templates/` mines recurring shapes from the ingested `raw_logs`

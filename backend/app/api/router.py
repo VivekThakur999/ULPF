@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.routes import (
+    ai,
     alerts,
     analytics,
     auth,
@@ -37,3 +38,4 @@ api_router.include_router(parsers.router, prefix="/parsers", tags=["parsers"])
 api_router.include_router(wasm.router, prefix="/wasm", tags=["wasm"])
 api_router.include_router(templates.router, prefix="/templates", tags=["templates"])
 api_router.include_router(compression.router, prefix="/compression", tags=["compression"])
+api_router.include_router(ai.router, prefix="/ai", tags=["ai"])

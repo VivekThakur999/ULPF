@@ -1,4 +1,4 @@
-{"ts":"2025-09-02T09:02:12Z","level":"warning","logger":"auth-svc","event":"login_failed","user":"admin","src_ip":"192.168.1.50","reason":"bad_password","msg":"authentication failure for admin"}
-{"ts":"2025-09-02T09:02:16Z","level":"warning","logger":"auth-svc","event":"login_failed","user":"admin","src_ip":"192.168.1.50","reason":"bad_password","msg":"authentication failure for admin"}
-{"ts":"2025-09-02T09:02:19Z","level":"error","logger":"auth-svc","event":"account_locked","user":"admin","src_ip":"192.168.1.50","msg":"account admin locked after repeated failures"}
-{"ts":"2025-09-02T09:06:02Z","level":"warning","logger":"auth-svc","event":"login_success","user":"admin","src_ip":"192.168.1.50","msg":"login for admin after lockout window"}
+{"ts":"2026-09-02T09:02:12Z","level":"warning","logger":"auth-svc","event":"login_failed","user":"admin","src_ip":"192.168.1.50","reason":"bad_password","msg":"authentication failure for admin"}
+{"ts":"2026-09-02T09:02:16Z","level":"warning","logger":"auth-svc","event":"login_failed","user":"admin","src_ip":"192.168.1.50","reason":"bad_password","msg":"authentication failure for admin"}
+{"ts":"2026-09-02T09:02:19Z","level":"error","logger":"auth-svc","event":"account_locked","user":"admin","src_ip":"192.168.1.50","msg":"account admin locked after repeated failures"}
+{"ts":"2026-09-02T09:06:02Z","level":"warning","logger":"auth-svc","event":"login_success","user":"admin","src_ip":"192.168.1.50","msg":"login for admin after lockout window"}

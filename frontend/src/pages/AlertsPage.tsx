@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
+import { RefreshCw, Sparkles } from "lucide-react";
 import {
   getAlert,
   listAlerts,
@@ -137,9 +138,18 @@ function AlertDetail({ alertId, onClose }: { alertId: string; onClose: () => voi
                   </p>
                 </div>
               </div>
-              <button className="btn-ghost py-1 text-xs" onClick={onClose}>
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/assistant?alert=${alertId}`}
+                  className="btn-ghost py-1 text-xs"
+                  onClick={onClose}
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Explain with AI
+                </Link>
+                <button className="btn-ghost py-1 text-xs" onClick={onClose}>
+                  Close
+                </button>
+              </div>
             </div>
 
             {hasRole("ANALYST") && (

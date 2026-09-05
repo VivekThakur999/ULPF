@@ -92,10 +92,16 @@ RBAC: `VIEWER < ANALYST < ADMIN`. "Requires ANALYST" means analyst **or** admin.
 
 See [template-mining.md](template-mining.md) for the algorithm and the byte accounting.
 
+### AI explainer (Module 22)
+| GET | `/api/ai/status` | any | active provider (`LOCAL OFFLINE EXPLAINER` / `OLLAMA LOCAL`), `offline`, `model`, `fallback_active` |
+| POST | `/api/ai/explain` | any | `{kind: event\|alert\|raw, event_id?/alert_id?/text?}` → server-retrieved `evidence` + advisory `explanation` (summary, important_fields, why_it_matters, detection_context, related_activity, suggested_steps, disclaimer). `404` for unknown id, `422` for oversized/missing input, `503` when `AI_PROVIDER=disabled`. |
+
+AI never modifies risk, severity, rules or alerts. See
+[security-model.md](security-model.md#ai-explanation-layer).
+
 ## Planned (later checkpoints)
 
-`/api/ai/explain` (offline log explanation), `/api/response/simulate`,
-`/api/demo/load`.
+`/api/response/simulate`, `/api/demo/load`.
 
 Each returns `422` with a Pydantic error list on invalid input, `401` when
 unauthenticated, `403` when the role is insufficient.

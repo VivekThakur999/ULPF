@@ -3,7 +3,8 @@ canonical Universal Log Event, coercing types and building the validated model.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from dateutil import parser as date_parser
@@ -53,10 +54,19 @@ def parse_timestamp(value: Any, *, reference_year: int | None = None) -> datetim
         except (OverflowError, OSError, ValueError):
             return None
     try:
+        now = datetime.now(timezone.utc)
+        had_year = bool(re.search(r"\b\d{4}\b", s))
         dt = date_parser.parse(s, default=datetime(
-            reference_year or datetime.now(timezone.utc).year, 1, 1, tzinfo=timezone.utc
+            reference_year or now.year, 1, 1, tzinfo=timezone.utc
         ))
-        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        dt = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        # A year-less log line (BSD syslog) that resolves to more than a couple
+        # of days in the future almost certainly belongs to the previous year -
+        # logs are always in the past. Keeps year-less dates near a rollover
+        # from drifting a year ahead of explicit-year sibling events.
+        if not had_year and dt > now + timedelta(days=2):
+            dt = dt.replace(year=dt.year - 1)
+        return dt
     except (ValueError, OverflowError, TypeError):
         return None
 

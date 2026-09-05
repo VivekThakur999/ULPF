@@ -1,4 +1,4 @@
-date=2025-09-02 time=09:01:50 devname=fw-dc-01 devid=FGT60F action=deny srcip=192.168.1.50 dstip=10.20.0.20 srcport=44206 dstport=22 proto=6 service=SSH policyid=12 sentbyte=0 rcvdbyte=0 msg="iprope_in_check() check failed on policy 0, drop"
-date=2025-09-02 time=09:02:05 devname=fw-dc-01 devid=FGT60F action=deny srcip=192.168.1.50 dstip=10.20.0.20 srcport=44209 dstport=22 proto=6 service=SSH policyid=12 msg="Connection denied by firewall policy"
-date=2025-09-02 time=09:15:33 devname=fw-dc-01 devid=FGT60F action=accept srcip=10.20.0.31 dstip=10.20.0.20 srcport=51820 dstport=443 proto=6 service=HTTPS policyid=7 sentbyte=812 rcvdbyte=10233
-date=2025-09-02 time=10:15:00 devname=fw-dc-01 devid=FGT60F action=deny srcip=203.0.113.44 dstip=10.20.0.10 srcport=51000 dstport=80 proto=6 service=HTTP policyid=3 msg="Blocked by geo policy"
+date=2026-09-02 time=09:01:50 devname=fw-dc-01 devid=FGT60F action=deny srcip=192.168.1.50 dstip=10.20.0.20 srcport=44206 dstport=22 proto=6 service=SSH policyid=12 sentbyte=0 rcvdbyte=0 msg="iprope_in_check() check failed on policy 0, drop"
+date=2026-09-02 time=09:02:05 devname=fw-dc-01 devid=FGT60F action=deny srcip=192.168.1.50 dstip=10.20.0.20 srcport=44209 dstport=22 proto=6 service=SSH policyid=12 msg="Connection denied by firewall policy"
+date=2026-09-02 time=09:15:33 devname=fw-dc-01 devid=FGT60F action=accept srcip=10.20.0.31 dstip=10.20.0.20 srcport=51820 dstport=443 proto=6 service=HTTPS policyid=7 sentbyte=812 rcvdbyte=10233
+date=2026-09-02 time=10:15:00 devname=fw-dc-01 devid=FGT60F action=deny srcip=203.0.113.44 dstip=10.20.0.10 srcport=51000 dstport=80 proto=6 service=HTTP policyid=3 msg="Blocked by geo policy"

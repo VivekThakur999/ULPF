@@ -134,7 +134,8 @@ walks through the full workflow including the brute-force attack scenario (attac
 | 11–13 | Live analytics Dashboard, Live Pipeline Debugger, declarative parser packs + versioning, sandboxed WASM parser (PoC) | ✅ done |
 | CP5 | UI/UX productization: design system, interactive pipeline story, investigation drawers, live polling | ✅ done |
 | 14–15 | Deterministic template mining + template-based **lossless** micro-compression (measured benchmark, verified reconstruction) | ✅ done |
-| 16–24 | Offline AI assistant, response simulator, perf benchmarks, SIH demo mode, final hardening | ⏳ planned |
+| 16 | Offline AI log explainer: deterministic local provider + optional local Ollama, evidence-grounded, advisory only | ✅ done |
+| 17–24 | Response simulator, perf benchmarks, SIH demo mode, final hardening | ⏳ planned |
 
 ## Future scope
 

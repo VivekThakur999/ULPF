@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     ai_provider: str = Field(default="local_template")  # local_template | disabled | ollama
     ollama_base_url: str = Field(default="http://localhost:11434")
     ollama_model: str = Field(default="llama3.2")
+    ai_max_context_chars: int = Field(default=6000)
+    ai_max_raw_input_chars: int = Field(default=16000)
+    ai_ollama_timeout_seconds: int = Field(default=20)
 
     @field_validator("cors_origins", "allowed_upload_extensions", mode="before")
     @classmethod

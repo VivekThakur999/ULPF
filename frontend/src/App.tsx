@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Activity, Sparkles } from "lucide-react";
+import { Activity } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/layouts/AppLayout";
 import { Spinner } from "@/components/ui";
@@ -14,6 +14,7 @@ import LogExplorerPage from "@/pages/LogExplorerPage";
 import AlertsPage from "@/pages/AlertsPage";
 import TemplatesPage from "@/pages/TemplatesPage";
 import CompressionPage from "@/pages/CompressionPage";
+import AssistantPage from "@/pages/AssistantPage";
 
 // Monaco-heavy pages are code-split so the main bundle stays lean.
 const PipelineDebuggerPage = lazy(() => import("@/pages/PipelineDebuggerPage"));
@@ -61,22 +62,7 @@ export default function App() {
             />
           }
         />
-        <Route
-          path="assistant"
-          element={
-            <ComingSoon
-              title="AI Assistant"
-              icon={Sparkles}
-              checkpoint="Checkpoint 7"
-              summary="Optional offline log/alert/event explanation. Never required for the core pipeline, never overrides deterministic detection or risk scoring."
-              bullets={[
-                "Explain a raw log, a normalized event, or an alert in plain language",
-                "Local/template provider by default; optional local Ollama model",
-                "Every explanation is clearly marked LOCAL / OFFLINE and non-authoritative",
-              ]}
-            />
-          }
-        />
+        <Route path="assistant" element={<AssistantPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

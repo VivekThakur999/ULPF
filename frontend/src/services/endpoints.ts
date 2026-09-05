@@ -514,3 +514,41 @@ export const decompressRecord = (raw_log_id: string) =>
   api.post<DecompressResult>("/compression/decompress", { raw_log_id }).then((r) => r.data);
 export const listCompressionRecords = () =>
   api.get<CompressionRecordRow[]>("/compression/records").then((r) => r.data);
+
+// --- AI explainer (Module 22) ---
+export interface AIStatus {
+  provider: string;
+  offline: boolean;
+  model: string | null;
+  available: boolean;
+  fallback_active: boolean;
+  note: string;
+}
+export interface AIExplanation {
+  provider: string;
+  offline: boolean;
+  model: string | null;
+  summary: string;
+  important_fields: { field: string; value: string; note: string }[];
+  why_it_matters: string;
+  detection_context: string;
+  related_activity: string;
+  suggested_steps: string[];
+  disclaimer: string;
+  fallback_from: string | null;
+}
+export interface AIExplainResponse {
+  kind: "event" | "alert" | "raw";
+  generated_at: string;
+  provider: string;
+  offline: boolean;
+  model: string | null;
+  evidence: Record<string, unknown>;
+  explanation: AIExplanation;
+}
+export const aiStatus = () => api.get<AIStatus>("/ai/status").then((r) => r.data);
+export const aiExplain = (body:
+  | { kind: "event"; event_id: string }
+  | { kind: "alert"; alert_id: string }
+  | { kind: "raw"; text: string }
+) => api.post<AIExplainResponse>("/ai/explain", body).then((r) => r.data);

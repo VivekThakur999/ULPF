@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { ArrowRight, FileText, ShieldCheck, Sparkles } from "lucide-react";
 import { getLogDetail } from "@/services/endpoints";
 import { Badge, ErrorState, Spinner, verdictTone } from "@/components/ui";
@@ -44,9 +45,18 @@ export default function EventDetail({ eventId, onClose }: { eventId: string; onC
                 </h2>
                 <p className="text-xs text-gray-500">{q.data.event.id}</p>
               </div>
-              <button className="btn-ghost py-1 text-xs" onClick={onClose}>
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/assistant?event=${q.data.event.id}`}
+                  className="btn-ghost py-1 text-xs"
+                  onClick={onClose}
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Explain with AI
+                </Link>
+                <button className="btn-ghost py-1 text-xs" onClick={onClose}>
+                  Close
+                </button>
+              </div>
             </div>
 
             <TransformFlow event={q.data.event} />

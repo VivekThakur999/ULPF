@@ -78,8 +78,13 @@ def test_detection_creates_one_correlated_alert(scenario_loaded):
 
 def test_alert_detail_has_incident_timeline(scenario_loaded):
     client, headers = scenario_loaded
-    alert_id = client.get("/api/alerts", headers=headers).json()["items"][0]["id"]
-    d = client.get(f"/api/alerts/{alert_id}", headers=headers).json()
+    # target the alert for the known attacker IP (pseudonymized)
+    attacker = client.get("/api/logs/pseudonymize?value=192.168.1.50&kind=ip",
+                          headers=headers).json()["pseudonym"]
+    alerts = client.get("/api/alerts", headers=headers).json()["items"]
+    src_alert = next(a for a in alerts if a["entity"].get("source_ip") == attacker)
+
+    d = client.get(f"/api/alerts/{src_alert['id']}", headers=headers).json()
     tl = d["timeline"]
     assert len(tl) >= 5
     # timeline ordered by time
