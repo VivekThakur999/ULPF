@@ -7,7 +7,7 @@ from app.models.security import SecurityAlert, SecurityRule, SecurityEvent  # no
 from app.models.parser import ParserPack, ParserVersion  # noqa: F401
 from app.models.pipeline import PipelineRun  # noqa: F401
 from app.models.privacy import PiiSetting  # noqa: F401
-from app.models.template import Template, CompressionRecord  # noqa: F401
+from app.models.template import Template, TemplateMatch, CompressionRecord  # noqa: F401
 
 __all__ = [
     "User",
@@ -25,5 +25,6 @@ __all__ = [
     "PipelineRun",
     "PiiSetting",
     "Template",
+    "TemplateMatch",
     "CompressionRecord",
 ]

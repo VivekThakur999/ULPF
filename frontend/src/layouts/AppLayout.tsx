@@ -9,6 +9,7 @@ import {
   FileStack,
   LayoutDashboard,
   LogOut,
+  LayoutTemplate,
   Package,
   Search,
   ShieldCheck,
@@ -50,8 +51,9 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "Platform",
     items: [
       { to: "/parsers", label: "Parser Packs", icon: Package },
-      { to: "/privacy", label: "Privacy", icon: ShieldCheck },
+      { to: "/templates", label: "Templates", icon: LayoutTemplate },
       { to: "/compression", label: "Compression", icon: Waypoints },
+      { to: "/privacy", label: "Privacy", icon: ShieldCheck },
       { to: "/assistant", label: "AI Assistant", icon: Sparkles },
     ],
   },

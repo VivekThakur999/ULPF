@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Activity, Sparkles, Waypoints } from "lucide-react";
+import { Activity, Sparkles } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/layouts/AppLayout";
 import { Spinner } from "@/components/ui";
@@ -12,6 +12,8 @@ import IngestionPage from "@/pages/IngestionPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import LogExplorerPage from "@/pages/LogExplorerPage";
 import AlertsPage from "@/pages/AlertsPage";
+import TemplatesPage from "@/pages/TemplatesPage";
+import CompressionPage from "@/pages/CompressionPage";
 
 // Monaco-heavy pages are code-split so the main bundle stays lean.
 const PipelineDebuggerPage = lazy(() => import("@/pages/PipelineDebuggerPage"));
@@ -41,23 +43,8 @@ export default function App() {
         <Route path="analytics" element={<Navigate to="/" replace />} />
         <Route path="parsers" element={<Lazy><ParserPacksPage /></Lazy>} />
         <Route path="privacy" element={<PrivacyPage />} />
-        <Route
-          path="compression"
-          element={
-            <ComingSoon
-              title="Compression"
-              icon={Waypoints}
-              checkpoint="Checkpoint 6"
-              summary="Template mining and template-based micro-compression for repeated log structures."
-              bullets={[
-                "Mine templates from ingested events (e.g. TPL-0045: \"User <*> logged in from <*>\")",
-                "Store template ID + extracted variables instead of the full repeated string",
-                "Guarantee exact reconstruction of the original event",
-                "Report only measured Original / Compressed / Savings — never an assumed percentage",
-              ]}
-            />
-          }
-        />
+        <Route path="templates" element={<TemplatesPage />} />
+        <Route path="compression" element={<CompressionPage />} />
         <Route
           path="response"
           element={

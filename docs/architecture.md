@@ -91,6 +91,19 @@ breaking ties by `specificity`.
 `GET /api/analytics/overview` aggregates **only** real rows: `raw_logs` status
 counts, `normalized_events` facets, `processing_jobs.processing_rate`,
 `security_alerts` by band, `security_events`. No metric is hard-coded.
+`GET /api/analytics/pipeline` maps each pipeline stage to a real count from the
+same tables for the Dashboard's interactive pipeline story.
+
+## 5c. Template mining & micro-compression
+
+`services/templates/` mines recurring shapes from the ingested `raw_logs`
+(deterministic anchor/variable clustering, no ML). `services/compression/`
+stores each occurrence as a `template_matches` row (template ref + variable
+values + exact separators) and can reconstruct the original **byte-for-byte**.
+The benchmark measures real payload bytes and verifies every reconstruction —
+it never claims a fixed ratio and reports negative savings honestly. Full
+detail: [template-mining.md](template-mining.md). This subsystem reads raw logs
+and never alters normalization or security-detection behaviour.
 
 ## 6. Security model
 

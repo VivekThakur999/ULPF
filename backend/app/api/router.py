@@ -7,6 +7,7 @@ from app.api.routes import (
     alerts,
     analytics,
     auth,
+    compression,
     detection,
     ingestion,
     logs,
@@ -15,6 +16,7 @@ from app.api.routes import (
     privacy,
     security,
     sources,
+    templates,
     users,
     wasm,
 )
@@ -33,3 +35,5 @@ api_router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(parsers.router, prefix="/parsers", tags=["parsers"])
 api_router.include_router(wasm.router, prefix="/wasm", tags=["wasm"])
+api_router.include_router(templates.router, prefix="/templates", tags=["templates"])
+api_router.include_router(compression.router, prefix="/compression", tags=["compression"])

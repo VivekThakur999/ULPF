@@ -78,10 +78,24 @@ RBAC: `VIEWER < ANALYST < ADMIN`. "Requires ANALYST" means analyst **or** admin.
 | POST | `/api/wasm/validate` | ADMIN | static-check a `wat`/`wasm_base64` module |
 | POST | `/api/wasm/run` | ADMIN | run a module against one line, sandboxed + fuel/timeout/memory limited |
 
+### Template mining (Module 23)
+| POST | `/api/templates/mine` | ANALYST | cluster the ingested raw logs into templates (`source` / `time_from` / `time_to` / `limit` filters); idempotent per scope |
+| GET | `/api/templates` | any | list templates + summary (`covered_events`, `unique_sources`, `avg_variables`); filter `source` / `min_frequency` / time range |
+| GET | `/api/templates/{id\|key}` | any | template detail: shape, `token_signature`, `source_distribution`, stored examples |
+| GET | `/api/templates/{id\|key}/examples` | any | paginated real matching lines + their extracted variables |
+
+### Micro-compression (Module 24)
+| POST | `/api/compression/compress` | ANALYST | ensure every raw log in scope (`job_id` / `source`) has a `template_matches` row |
+| POST | `/api/compression/decompress` | any | `{raw_log_id}` → reconstruct + `exact_match` (compared to the stored original) |
+| POST | `/api/compression/benchmark` | ANALYST | measured `original` vs `compressed` vs `metadata` bytes, per-record reconstruction verification, `reduction_pct` (may be negative); persists a `compression_records` row |
+| GET | `/api/compression/records` | any | benchmark run history |
+
+See [template-mining.md](template-mining.md) for the algorithm and the byte accounting.
+
 ## Planned (later checkpoints)
 
-`/api/ai/explain` (offline log explanation), `/api/compression/stats`,
-`/api/response/simulate`, `/api/templates*`, `/api/demo/load`.
+`/api/ai/explain` (offline log explanation), `/api/response/simulate`,
+`/api/demo/load`.
 
 Each returns `422` with a Pydantic error list on invalid input, `401` when
 unauthenticated, `403` when the role is insufficient.

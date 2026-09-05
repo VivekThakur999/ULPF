@@ -147,6 +147,7 @@ export interface UniversalEvent {
   confidence: number;
   template_id: string | null;
   job_id?: string | null;
+  raw_log_id?: string | null;
 }
 
 export type LogFilters = Partial<
@@ -389,3 +390,127 @@ export const wasmRun = (wat: string, input: string) =>
       { wat, input },
     )
     .then((r) => r.data);
+
+// --- templates (Module 23) ---
+export interface TemplateSummary {
+  id: string;
+  template_key: string;
+  pattern: string;
+  token_count: number;
+  variable_count: number;
+  variable_types: (string | null)[];
+  occurrences: number;
+  source_distribution: Record<string, number>;
+  example: string;
+  first_seen: string;
+  last_seen: string;
+  created_at: string;
+  updated_at: string;
+}
+export interface TemplateDetail extends TemplateSummary {
+  literal_tokens: (string | null)[];
+  separators: string[];
+  trailing: string;
+  token_signature: string;
+  examples: { raw_log_id: string; source: string; ts: string | null; raw: string }[];
+}
+export interface TemplateList {
+  total: number;
+  items: TemplateSummary[];
+  covered_events: number;
+  unique_sources: number;
+  avg_variables: number;
+}
+export interface MineResult {
+  records_scanned: number;
+  records_matched: number;
+  templates_total: number;
+  templates_created: number;
+  templates_updated: number;
+  duration_seconds: number;
+  scan_limit_hit: boolean;
+  template_keys: string[];
+}
+
+export const listTemplates = (params?: {
+  source?: string;
+  min_frequency?: number;
+  time_from?: string;
+  time_to?: string;
+  limit?: number;
+  offset?: number;
+}) => api.get<TemplateList>("/templates", { params }).then((r) => r.data);
+
+export const getTemplate = (key: string) =>
+  api.get<TemplateDetail>(`/templates/${key}`).then((r) => r.data);
+
+export const getTemplateExamples = (key: string, limit = 20) =>
+  api
+    .get<{ raw_log_id: string; source: string; ts: string | null; raw: string; variables: string[] }[]>(
+      `/templates/${key}/examples`,
+      { params: { limit } },
+    )
+    .then((r) => r.data);
+
+export const mineTemplates = (body: {
+  source?: string;
+  time_from?: string;
+  time_to?: string;
+  limit?: number;
+}) => api.post<MineResult>("/templates/mine", body).then((r) => r.data);
+
+// --- compression (Module 24) ---
+export interface BenchmarkResult {
+  scope: string;
+  record_count: number;
+  reconstructable_count: number;
+  template_count: number;
+  original_bytes: number;
+  compressed_bytes: number;
+  metadata_bytes: number;
+  total_compressed_bytes: number;
+  savings_bytes: number;
+  reduction_pct: number;
+  processing_seconds: number;
+  events_per_sec: number;
+  mismatches: { raw_log_id: string; original_preview: string; reconstructed_preview: string }[];
+}
+export interface CompressionRecordRow {
+  id: string;
+  ts: string;
+  job_id: string | null;
+  scope: string;
+  original_bytes: number;
+  compressed_bytes: number;
+  metadata_bytes: number;
+  total_compressed_bytes: number;
+  reduction_pct: number;
+  record_count: number;
+  reconstructable_count: number;
+  template_count: number;
+  processing_seconds: number;
+  events_per_sec: number;
+  method: string;
+}
+export interface DecompressResult {
+  raw_log_id: string;
+  template_key: string | null;
+  original: string;
+  reconstructed: string | null;
+  exact_match: boolean;
+  variables: string[];
+}
+
+export const runBenchmark = (body: { job_id?: string; source?: string; limit?: number }) =>
+  api.post<BenchmarkResult>("/compression/benchmark", body).then((r) => r.data);
+export const compressScope = (body: { job_id?: string; source?: string; limit?: number }) =>
+  api
+    .post<{ records_in_scope: number; records_compressed: number; templates_used: number }>(
+      "/compression/compress",
+      body,
+    )
+    .then((r) => r.data);
+export const decompressRecord = (raw_log_id: string) =>
+  api.post<DecompressResult>("/compression/decompress", { raw_log_id }).then((r) => r.data);
+export const listCompressionRecords = () =>
+  api.get<CompressionRecordRow[]>("/compression/records").then((r) => r.data);

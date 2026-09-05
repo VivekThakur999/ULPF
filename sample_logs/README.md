@@ -12,7 +12,7 @@ up (`corp.example`, `admin`, `jdoe`, …).
 | `apache/` | Apache combined access logs |
 | `nginx/` | Nginx extended access logs (XFF + timing) |
 | `firewall/` | iptables kernel logs + vendor key=value firewall logs |
-| `application/` | JSON / NDJSON application logs |
+| `application/` | JSON / NDJSON application logs; `bulk_access.log` = 600 synthetic repetitive access lines for template-mining / compression demos |
 | `windows/` | Windows-like event logs (JSON export shape) |
 | `malformed/` | broken lines, bad timestamps/IPs, encoding issues, duplicates |
 | `security_scenarios/` | multi-source attack scenarios (see each subfolder's README) |

@@ -120,6 +120,7 @@ walks through the full workflow including the brute-force attack scenario (attac
 - [docs/deployment.md](docs/deployment.md)
 - [docs/security-model.md](docs/security-model.md)
 - [docs/wasm-sandbox.md](docs/wasm-sandbox.md)
+- [docs/template-mining.md](docs/template-mining.md)
 - [docs/demo.md](docs/demo.md)
 
 ## Build status (phase-by-phase)
@@ -131,7 +132,9 @@ walks through the full workflow including the brute-force attack scenario (attac
 | 6–8 | Cleaning + validation, field extraction, normalization, deterministic PII, security shield | ✅ done |
 | 9–10 | Log Explorer + search, cross-source correlation, 8 detection rules, transparent risk scoring, alerts, incident timeline | ✅ done |
 | 11–13 | Live analytics Dashboard, Live Pipeline Debugger, declarative parser packs + versioning, sandboxed WASM parser (PoC) | ✅ done |
-| 14–24 | Templates/compression, offline AI, response simulator, tests, perf, polish, demo mode | ⏳ planned |
+| CP5 | UI/UX productization: design system, interactive pipeline story, investigation drawers, live polling | ✅ done |
+| 14–15 | Deterministic template mining + template-based **lossless** micro-compression (measured benchmark, verified reconstruction) | ✅ done |
+| 16–24 | Offline AI assistant, response simulator, perf benchmarks, SIH demo mode, final hardening | ⏳ planned |
 
 ## Future scope
 
