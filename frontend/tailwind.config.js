@@ -5,30 +5,44 @@ export default {
   theme: {
     extend: {
       colors: {
-        // dark-first SOC surfaces
+        // Light enterprise content surfaces (cards, tables, drawers, main canvas).
         base: {
-          bg: "#080b11",
-          panel: "#0f141d",
-          "panel-2": "#141b26",
-          elevated: "#18202d",
-          border: "#1f2734",
-          "border-strong": "#2b3546",
+          bg: "#f2f5fa",
+          panel: "#ffffff",
+          "panel-2": "#f6f8fc",
+          elevated: "#ffffff",
+          border: "#e2e8f0",
+          "border-strong": "#cbd5e1",
         },
+        // Deep navy structural chrome — sidebar / nav rail only.
+        nav: {
+          bg: "#0b1220",
+          panel: "#101a2e",
+          border: "rgba(255,255,255,0.08)",
+          text: "#93a4bd",
+          "text-active": "#ffffff",
+        },
+        // Electric blue — primary interaction / brand.
         brand: {
-          DEFAULT: "#3b82f6",
-          fg: "#7ca9f9",
-          dim: "#1d3a6b",
+          DEFAULT: "#2563eb",
+          fg: "#2563eb",
+          dim: "#dbeafe",
         },
-        // semantic status palette (single source of truth)
+        // Purple — AI / intelligence.
+        ai: {
+          DEFAULT: "#7c3aed",
+          fg: "#7c3aed",
+          dim: "#ede9fe",
+        },
+        // Semantic status accents (dot / text colour — badges built from these in status.ts).
         sev: {
           info: "#64748b",
-          low: "#38bdf8",
-          medium: "#fbbf24",
-          high: "#fb923c",
-          critical: "#f87171",
+          low: "#0284c7",
+          medium: "#d97706",
+          high: "#ea580c",
+          critical: "#dc2626",
         },
-        ok: "#34d399",
-        ai: "#a78bfa",
+        ok: "#059669",
       },
       fontFamily: {
         sans: [
@@ -41,14 +55,14 @@ export default {
         "2xs": ["0.6875rem", { lineHeight: "1rem" }],
       },
       boxShadow: {
-        panel: "0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6)",
-        glow: "0 0 0 1px rgba(59,130,246,0.35), 0 0 22px -4px rgba(59,130,246,0.35)",
+        panel: "0 1px 2px rgba(15,23,42,0.04), 0 8px 20px -14px rgba(15,23,42,0.16)",
+        glow: "0 0 0 1px rgba(37,99,235,0.35), 0 0 16px -4px rgba(37,99,235,0.35)",
       },
       backgroundImage: {
         "grid-faint":
-          "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)",
+          "linear-gradient(rgba(15,23,42,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.025) 1px, transparent 1px)",
         "surface-sheen":
-          "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0) 40%)",
+          "linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0) 40%)",
       },
       keyframes: {
         "fade-in-up": {

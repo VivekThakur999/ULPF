@@ -2,6 +2,11 @@
  * Single source of truth for semantic status styling across ULPF.
  * Every badge / pill / indicator in the app should route through here so a
  * "HIGH" alert looks identical on every page.
+ *
+ * Light enterprise surfaces: badges use the Material "container" pattern —
+ * a soft tint background with a much darker foreground for AA contrast on
+ * white/off-white cards (bg-emerald-100 text-emerald-800), never a light
+ * color on a light background.
  */
 export type StatusKey =
   | "safe" | "info" | "low" | "medium" | "high" | "critical"
@@ -26,37 +31,37 @@ const S = (label: string, dot: string, badge: string, text: string): StatusStyle
 });
 
 const MAP: Record<string, StatusStyle> = {
-  safe: S("Safe", "#34d399", "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/25", "text-emerald-300"),
-  ok: S("OK", "#34d399", "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/25", "text-emerald-300"),
-  online: S("Online", "#34d399", "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/25", "text-emerald-300"),
-  completed: S("Completed", "#34d399", "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/25", "text-emerald-300"),
-  resolved: S("Resolved", "#34d399", "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/25", "text-emerald-300"),
+  safe: S("Safe", "#059669", "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200", "text-emerald-700"),
+  ok: S("OK", "#059669", "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200", "text-emerald-700"),
+  online: S("Online", "#059669", "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200", "text-emerald-700"),
+  completed: S("Completed", "#059669", "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200", "text-emerald-700"),
+  resolved: S("Resolved", "#059669", "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200", "text-emerald-700"),
 
-  info: S("Info", "#64748b", "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25", "text-slate-300"),
-  neutral: S("—", "#64748b", "bg-white/8 text-gray-300 ring-1 ring-white/10", "text-gray-300"),
-  idle: S("Idle", "#64748b", "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25", "text-slate-300"),
-  pending: S("Pending", "#64748b", "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25", "text-slate-300"),
-  false_positive: S("False positive", "#64748b", "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25", "text-slate-300"),
+  info: S("Info", "#64748b", "bg-slate-100 text-slate-700 ring-1 ring-slate-200", "text-slate-600"),
+  neutral: S("—", "#64748b", "bg-slate-100 text-slate-600 ring-1 ring-slate-200", "text-slate-600"),
+  idle: S("Idle", "#64748b", "bg-slate-100 text-slate-700 ring-1 ring-slate-200", "text-slate-600"),
+  pending: S("Pending", "#64748b", "bg-slate-100 text-slate-700 ring-1 ring-slate-200", "text-slate-600"),
+  false_positive: S("False positive", "#64748b", "bg-slate-100 text-slate-700 ring-1 ring-slate-200", "text-slate-600"),
 
-  low: S("Low", "#38bdf8", "bg-sky-500/12 text-sky-300 ring-1 ring-sky-500/25", "text-sky-300"),
+  low: S("Low", "#0284c7", "bg-sky-100 text-sky-800 ring-1 ring-sky-200", "text-sky-700"),
 
-  medium: S("Medium", "#fbbf24", "bg-amber-500/12 text-amber-300 ring-1 ring-amber-500/25", "text-amber-300"),
-  suspicious: S("Suspicious", "#fbbf24", "bg-amber-500/12 text-amber-300 ring-1 ring-amber-500/25", "text-amber-300"),
-  simulation: S("Simulation only", "#fbbf24", "bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/35", "text-amber-300"),
-  acknowledged: S("Acknowledged", "#fbbf24", "bg-amber-500/12 text-amber-300 ring-1 ring-amber-500/25", "text-amber-300"),
+  medium: S("Medium", "#d97706", "bg-amber-100 text-amber-900 ring-1 ring-amber-200", "text-amber-800"),
+  suspicious: S("Suspicious", "#d97706", "bg-amber-100 text-amber-900 ring-1 ring-amber-200", "text-amber-800"),
+  simulation: S("Simulation only", "#d97706", "bg-amber-100 text-amber-900 ring-1 ring-amber-300", "text-amber-800"),
+  acknowledged: S("Acknowledged", "#d97706", "bg-amber-100 text-amber-900 ring-1 ring-amber-200", "text-amber-800"),
 
-  high: S("High", "#fb923c", "bg-orange-500/12 text-orange-300 ring-1 ring-orange-500/25", "text-orange-300"),
-  investigating: S("Investigating", "#fb923c", "bg-orange-500/12 text-orange-300 ring-1 ring-orange-500/25", "text-orange-300"),
+  high: S("High", "#ea580c", "bg-orange-100 text-orange-800 ring-1 ring-orange-200", "text-orange-700"),
+  investigating: S("Investigating", "#ea580c", "bg-orange-100 text-orange-800 ring-1 ring-orange-200", "text-orange-700"),
 
-  critical: S("Critical", "#f87171", "bg-red-500/12 text-red-300 ring-1 ring-red-500/30", "text-red-300"),
-  weaponized: S("Weaponized", "#f87171", "bg-red-500/12 text-red-300 ring-1 ring-red-500/30", "text-red-300"),
-  blocked: S("Blocked", "#f87171", "bg-red-500/12 text-red-300 ring-1 ring-red-500/30", "text-red-300"),
-  failed: S("Failed", "#f87171", "bg-red-500/12 text-red-300 ring-1 ring-red-500/30", "text-red-300"),
-  error: S("Error", "#f87171", "bg-red-500/12 text-red-300 ring-1 ring-red-500/30", "text-red-300"),
+  critical: S("Critical", "#dc2626", "bg-red-100 text-red-800 ring-1 ring-red-200", "text-red-700"),
+  weaponized: S("Weaponized", "#dc2626", "bg-red-100 text-red-800 ring-1 ring-red-200", "text-red-700"),
+  blocked: S("Blocked", "#dc2626", "bg-red-100 text-red-800 ring-1 ring-red-200", "text-red-700"),
+  failed: S("Failed", "#dc2626", "bg-red-100 text-red-800 ring-1 ring-red-200", "text-red-700"),
+  error: S("Error", "#dc2626", "bg-red-100 text-red-800 ring-1 ring-red-200", "text-red-700"),
 
-  processing: S("Processing", "#7ca9f9", "bg-blue-500/12 text-blue-300 ring-1 ring-blue-500/25", "text-blue-300"),
-  running: S("Running", "#7ca9f9", "bg-blue-500/12 text-blue-300 ring-1 ring-blue-500/25", "text-blue-300"),
-  new: S("New", "#7ca9f9", "bg-blue-500/12 text-blue-300 ring-1 ring-blue-500/25", "text-blue-300"),
+  processing: S("Processing", "#2563eb", "bg-blue-100 text-blue-800 ring-1 ring-blue-200", "text-blue-700"),
+  running: S("Running", "#2563eb", "bg-blue-100 text-blue-800 ring-1 ring-blue-200", "text-blue-700"),
+  new: S("New", "#2563eb", "bg-blue-100 text-blue-800 ring-1 ring-blue-200", "text-blue-700"),
 };
 
 /** Normalise arbitrary backend strings to a StatusKey. */

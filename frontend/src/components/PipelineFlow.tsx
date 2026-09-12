@@ -1,14 +1,42 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  CheckCircle2,
+  Database,
+  GitMerge,
+  Layers,
+  Lock,
+  Radar,
+  ScanSearch,
+  ShieldCheck,
+  Siren,
+  Sparkles,
+  Upload,
+  type LucideIcon,
+} from "lucide-react";
 import { analyticsPipeline, type PipelineNode } from "@/services/endpoints";
 import { ErrorState, LiveDot, SectionHeader, Skeleton } from "@/components/ui";
 
-const NODE_STYLE: Record<PipelineNode["status"], { ring: string; text: string; dot: string }> = {
-  idle: { ring: "border-base-border", text: "text-gray-500", dot: "#3b4658" },
-  ok: { ring: "border-emerald-500/40", text: "text-emerald-300", dot: "#34d399" },
-  running: { ring: "border-blue-500/50", text: "text-blue-300", dot: "#7ca9f9" },
-  warn: { ring: "border-amber-500/40", text: "text-amber-300", dot: "#fbbf24" },
-  critical: { ring: "border-red-500/50", text: "text-red-300", dot: "#f87171" },
+const NODE_ICON: Record<string, LucideIcon> = {
+  sources: Database,
+  ingestion: Upload,
+  detection: ShieldCheck,
+  parsing: ScanSearch,
+  cleaning: Sparkles,
+  pii: Lock,
+  normalization: Layers,
+  validation: CheckCircle2,
+  correlation: GitMerge,
+  risk: Radar,
+  alert: Siren,
+};
+
+const NODE_STYLE: Record<PipelineNode["status"], { accent: string; chip: string; text: string; dot: string }> = {
+  idle: { accent: "bg-slate-200", chip: "bg-slate-100 text-slate-500", text: "text-slate-400", dot: "#94a3b8" },
+  ok: { accent: "bg-emerald-500", chip: "bg-emerald-100 text-emerald-800", text: "text-emerald-700", dot: "#059669" },
+  running: { accent: "bg-blue-500", chip: "bg-blue-100 text-blue-800", text: "text-blue-700", dot: "#2563eb" },
+  warn: { accent: "bg-amber-500", chip: "bg-amber-100 text-amber-900", text: "text-amber-700", dot: "#d97706" },
+  critical: { accent: "bg-red-500", chip: "bg-red-100 text-red-800", text: "text-red-700", dot: "#dc2626" },
 };
 
 const DETAIL_LABEL: Record<string, string> = {
@@ -51,8 +79,9 @@ function renderValue(v: unknown): string {
 
 /**
  * The pipeline story: raw logs -> ... -> alerts, with a real count on every
- * stage (queried live from the backend) and a detail panel per stage. The
- * animated flow line only appears while a job is actually running.
+ * stage (queried live from the backend) and a detail panel per stage. Nothing
+ * here is animated fake activity — the flow accent only lights up while a
+ * job is actually running.
  */
 export default function PipelineFlow() {
   const [selected, setSelected] = useState<string | null>(null);
@@ -69,77 +98,72 @@ export default function PipelineFlow() {
   return (
     <div className="surface bg-surface-sheen p-4">
       <SectionHeader
-        title="Processing pipeline"
-        hint="Raw logs to alerts — every count is live from the backend"
+        title="ULPF processing pipeline"
+        hint="Log Sources → Ingestion → Security Shield → Parsing → Cleaning → PII → Normalization → Validation → Correlation → Risk → Alert"
         right={flowing ? <LiveDot label="processing" /> : <LiveDot label="idle" />}
       />
 
       {q.isLoading ? (
-        <div className="flex gap-2 overflow-hidden">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-[68px] w-28 shrink-0 rounded-lg" />
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          {Array.from({ length: 11 }).map((_, i) => (
+            <Skeleton key={i} className="h-[104px] rounded-xl" />
           ))}
         </div>
       ) : q.isError ? (
         <ErrorState error={q.error} onRetry={q.refetch} />
       ) : (
         <>
-          <div className="-mx-1 overflow-x-auto px-1 pb-1">
-            <div className="flex min-w-max items-stretch gap-1.5">
-              {nodes.map((n, i) => {
-                const st = NODE_STYLE[n.status];
-                const isActive = selected === n.key;
-                return (
-                  <div key={n.key} className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setSelected(isActive ? null : n.key)}
-                      aria-pressed={isActive}
-                      className={`w-32 rounded-lg border bg-base-panel px-3 py-2 text-left transition ${st.ring} ${
-                        isActive ? "ring-1 ring-brand" : "hover:border-base-border-strong"
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ background: st.dot }} aria-hidden />
-                        <span className="truncate text-2xs font-semibold uppercase tracking-wide text-gray-500">
-                          {n.label}
-                        </span>
-                      </div>
-                      <div className={`mt-1 text-lg font-semibold tnum ${st.text}`}>
-                        {n.count.toLocaleString()}
-                      </div>
-                    </button>
-                    {i < nodes.length - 1 && (
-                      <div className="relative h-px w-4 shrink-0 bg-base-border-strong">
-                        {flowing && (
-                          <span className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-brand-fg/70 to-transparent" />
-                        )}
-                      </div>
-                    )}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {nodes.map((n, i) => {
+              const st = NODE_STYLE[n.status];
+              const Icon = NODE_ICON[n.key] ?? Layers;
+              const isActive = selected === n.key;
+              return (
+                <button
+                  key={n.key}
+                  onClick={() => setSelected(isActive ? null : n.key)}
+                  aria-pressed={isActive}
+                  className={`relative flex min-h-[104px] flex-col justify-between overflow-hidden rounded-xl border bg-base-panel-2 p-3 text-left transition-all hover:bg-white hover:shadow-sm ${
+                    isActive ? "border-brand ring-1 ring-brand" : "border-base-border"
+                  }`}
+                >
+                  <span className={`absolute inset-x-0 top-0 h-1 ${st.accent}`} aria-hidden />
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <Icon className={`h-4 w-4 ${st.text}`} />
                   </div>
-                );
-              })}
-            </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-800">{n.label}</div>
+                    <div className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs font-bold tnum ${st.chip}`}>
+                      {n.count.toLocaleString()}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {active ? (
-            <div className="mt-3 rounded-lg border border-base-border bg-base-bg/60 p-3 text-xs">
-              <div className="mb-1.5 font-semibold text-gray-200">{active.label}</div>
+            <div className="mt-3 rounded-lg border border-base-border bg-base-panel-2 p-3 text-xs">
+              <div className="mb-1.5 font-semibold text-slate-800">{active.label} — detail</div>
               {Object.keys(active.detail).length === 0 ? (
-                <p className="text-gray-500">No breakdown for this stage.</p>
+                <p className="text-slate-500">No breakdown for this stage.</p>
               ) : (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-400">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-500">
                   {Object.entries(active.detail).map(([k, v]) => (
                     <span key={k}>
                       {DETAIL_LABEL[k] ?? k}:{" "}
-                      <span className="font-medium text-gray-200">{renderValue(v)}</span>
+                      <span className="font-medium text-slate-800">{renderValue(v)}</span>
                     </span>
                   ))}
                 </div>
               )}
-              {active.count === 0 && <p className="mt-1 text-gray-600">No activity yet at this stage.</p>}
+              {active.count === 0 && <p className="mt-1 text-slate-400">No activity yet at this stage.</p>}
             </div>
           ) : (
-            <p className="mt-3 text-2xs text-gray-600">Select a stage for its breakdown.</p>
+            <p className="mt-3 text-2xs text-slate-400">Select a stage for its breakdown.</p>
           )}
         </>
       )}

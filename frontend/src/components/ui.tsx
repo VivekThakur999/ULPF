@@ -20,12 +20,12 @@ export function PageHeader({
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         {eyebrow && (
-          <div className="mb-1 text-2xs font-semibold uppercase tracking-[0.18em] text-brand-fg/80">
+          <div className="mb-1 text-2xs font-semibold uppercase tracking-[0.18em] text-brand">
             {eyebrow}
           </div>
         )}
-        <h1 className="text-xl font-semibold tracking-tight text-gray-50">{title}</h1>
-        {subtitle && <p className="mt-1 max-w-3xl text-sm text-gray-400">{subtitle}</p>}
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h1>
+        {subtitle && <p className="mt-1 max-w-3xl text-sm text-slate-500">{subtitle}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -44,8 +44,8 @@ export function SectionHeader({
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
       <div>
-        <h2 className="text-sm font-semibold text-gray-200">{title}</h2>
-        {hint && <p className="text-xs text-gray-500">{hint}</p>}
+        <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
+        {hint && <p className="text-xs text-slate-500">{hint}</p>}
       </div>
       {right}
     </div>
@@ -70,8 +70,8 @@ export function Card({
 
 export function Spinner({ label }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 py-6 text-sm text-gray-400">
-      <Loader2 className="h-4 w-4 animate-spin text-brand-fg" />
+    <div className="flex items-center gap-2 py-6 text-sm text-slate-500">
+      <Loader2 className="h-4 w-4 animate-spin text-brand" />
       {label ?? "Loading…"}
     </div>
   );
@@ -79,8 +79,8 @@ export function Spinner({ label }: { label?: string }) {
 
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div className={clsx("relative overflow-hidden rounded-md bg-white/[0.04]", className)}>
-      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+    <div className={clsx("relative overflow-hidden rounded-md bg-slate-100", className)}>
+      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/70 to-transparent" />
     </div>
   );
 }
@@ -91,7 +91,7 @@ export function SkeletonTable({ rows = 6, cols = 5 }: { rows?: number; cols?: nu
       <div className="border-b border-base-border p-3">
         <Skeleton className="h-3 w-40" />
       </div>
-      <div className="divide-y divide-base-border/60">
+      <div className="divide-y divide-base-border">
         {Array.from({ length: rows }).map((_, r) => (
           <div key={r} className="flex gap-4 p-3">
             {Array.from({ length: cols }).map((__, c) => (
@@ -116,12 +116,12 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-base-border bg-base-panel/40 px-6 py-14 text-center">
-      <div className="mb-3 rounded-lg border border-base-border bg-base-panel-2 p-2.5">
-        <Icon className="h-5 w-5 text-gray-500" />
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-base-border-strong bg-base-panel-2/60 px-6 py-14 text-center">
+      <div className="mb-3 rounded-lg border border-base-border bg-white p-2.5 shadow-sm">
+        <Icon className="h-5 w-5 text-slate-400" />
       </div>
-      <p className="text-sm font-medium text-gray-300">{title}</p>
-      {hint && <p className="mt-1 max-w-sm text-xs text-gray-500">{hint}</p>}
+      <p className="text-sm font-medium text-slate-700">{title}</p>
+      {hint && <p className="mt-1 max-w-sm text-xs text-slate-500">{hint}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -131,16 +131,16 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   const msg =
     (error as { message?: string })?.message ?? (typeof error === "string" ? error : "Request failed");
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-sev-critical/30 bg-sev-critical/[0.07] p-4 text-sm text-red-200">
+    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-sev-critical" />
       <div className="flex-1">
         <p className="font-medium">Something went wrong</p>
-        <p className="mt-0.5 text-xs text-red-200/80">{msg}</p>
+        <p className="mt-0.5 text-xs text-red-700/90">{msg}</p>
       </div>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-400/30 bg-red-500/10 px-2.5 py-1.5 text-xs font-medium hover:bg-red-500/20"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
         >
           <RotateCw className="h-3 w-3" /> Retry
         </button>
@@ -152,12 +152,12 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
 export function BackendUnavailable({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-      <div className="rounded-xl border border-sev-critical/30 bg-sev-critical/[0.07] p-4">
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4">
         <AlertTriangle className="h-7 w-7 text-sev-critical" />
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-gray-100">Backend unavailable</h2>
-        <p className="mt-1 max-w-sm text-sm text-gray-400">
+        <h2 className="text-lg font-semibold text-slate-900">Backend unavailable</h2>
+        <p className="mt-1 max-w-sm text-sm text-slate-500">
           ULPF can't reach the API. Check that the backend is running, then retry.
         </p>
       </div>
@@ -207,7 +207,7 @@ export function QueryState<T>({
 
 export function LiveDot({ label = "Live" }: { label?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-gray-500">
+    <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-slate-500">
       <span className="relative flex h-1.5 w-1.5">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -245,12 +245,12 @@ export function StatusPill({
 
 /** Backward-compatible tone badge (kept so older pages keep working). */
 const BADGE_TONES: Record<string, string> = {
-  neutral: "bg-white/8 text-gray-300 ring-1 ring-white/10",
-  green: "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/25",
-  amber: "bg-amber-500/12 text-amber-300 ring-1 ring-amber-500/25",
-  red: "bg-red-500/12 text-red-300 ring-1 ring-red-500/30",
-  blue: "bg-blue-500/12 text-blue-300 ring-1 ring-blue-500/25",
-  slate: "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25",
+  neutral: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+  green: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+  amber: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
+  red: "bg-red-100 text-red-800 ring-1 ring-red-200",
+  blue: "bg-blue-100 text-blue-800 ring-1 ring-blue-200",
+  slate: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
 };
 
 export function Badge({
@@ -299,22 +299,22 @@ export function Kpi({
   icon?: typeof Inbox;
   loading?: boolean;
 }) {
-  const dot = status ? statusStyle(status).dot : "#3b4658";
+  const dot = status ? statusStyle(status).dot : "#cbd5e1";
   return (
-    <div className="surface bg-surface-sheen p-4 transition-colors hover:border-base-border-strong">
+    <div className="surface bg-surface-sheen p-4 transition-shadow hover:shadow-md">
       <div className="flex items-center justify-between">
-        <span className="text-2xs font-semibold uppercase tracking-wider text-gray-500">{label}</span>
+        <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
         <span className="flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} aria-hidden />
-          {Icon && <Icon className="h-3.5 w-3.5 text-gray-600" />}
+          {Icon && <Icon className="h-3.5 w-3.5 text-slate-400" />}
         </span>
       </div>
       {loading ? (
         <Skeleton className="mt-2 h-7 w-20" />
       ) : (
-        <div className="mt-1.5 text-2xl font-semibold tracking-tight text-gray-50 tnum">{value}</div>
+        <div className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-900 tnum">{value}</div>
       )}
-      {sub && <div className="mt-0.5 text-xs text-gray-500">{sub}</div>}
+      {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
     </div>
   );
 }
@@ -345,29 +345,29 @@ export function Drawer({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
         className={clsx(
-          "flex h-full w-full flex-col border-l border-base-border bg-base-panel shadow-2xl animate-slide-in-right",
+          "flex h-full w-full flex-col border-l border-base-border bg-base-elevated shadow-2xl animate-slide-in-right",
           width,
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-base-border px-5 py-3.5">
+        <div className="flex items-start justify-between gap-3 border-b border-base-border bg-base-panel-2 px-5 py-3.5">
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-gray-100">{title}</div>
-            {subtitle && <div className="truncate text-xs text-gray-500">{subtitle}</div>}
+            <div className="truncate text-sm font-semibold text-slate-900">{title}</div>
+            {subtitle && <div className="truncate text-xs text-slate-500">{subtitle}</div>}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {actions}
             <button
               onClick={onClose}
               aria-label="Close panel"
-              className="rounded-lg border border-base-border bg-base-panel-2 p-1.5 text-gray-400 hover:text-gray-200"
+              className="rounded-lg border border-base-border bg-white p-1.5 text-slate-500 hover:text-slate-800"
             >
               <X className="h-4 w-4" />
             </button>
@@ -399,8 +399,8 @@ export function Tabs<T extends string>({
           className={clsx(
             "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
             value === t.key
-              ? "border-brand text-brand-fg"
-              : "border-transparent text-gray-400 hover:text-gray-200",
+              ? "border-brand text-brand"
+              : "border-transparent text-slate-500 hover:text-slate-800",
           )}
         >
           {t.label}
@@ -443,19 +443,19 @@ export function FilterChips({
   if (entries.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-2xs font-semibold uppercase tracking-wider text-gray-600">Filters</span>
+      <span className="text-2xs font-semibold uppercase tracking-wider text-slate-400">Filters</span>
       {entries.map(([k, v]) => (
         <button
           key={k}
           onClick={() => onRemove(k)}
-          className="group inline-flex items-center gap-1 rounded-md border border-brand/25 bg-brand/10 px-1.5 py-0.5 text-2xs text-brand-fg hover:bg-brand/20"
+          className="group inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-2xs text-blue-800 hover:bg-blue-100"
         >
-          <span className="text-gray-400">{k.replace(/_/g, " ")}:</span>
+          <span className="text-slate-500">{k.replace(/_/g, " ")}:</span>
           <span className="font-medium">{String(v)}</span>
           <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
         </button>
       ))}
-      <button onClick={onClear} className="text-2xs text-gray-500 hover:text-gray-300 underline">
+      <button onClick={onClear} className="text-2xs text-slate-500 hover:text-slate-800 underline">
         clear all
       </button>
     </div>
@@ -488,17 +488,17 @@ export function RiskMeter({
         </div>
       </div>
       <div className="mt-2">
-        <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100">
           <div
             className="h-full rounded-full transition-all"
             style={{
               width: `${pct}%`,
-              background: `linear-gradient(90deg, #38bdf8, #fbbf24, #fb923c, #f87171)`,
+              background: `linear-gradient(90deg, #0284c7, #d97706, #ea580c, #dc2626)`,
               clipPath: `inset(0 ${100 - pct}% 0 0)`,
             }}
           />
         </div>
-        <div className="mt-1 flex justify-between text-2xs text-gray-600">
+        <div className="mt-1 flex justify-between text-2xs text-slate-400">
           <span>0</span>
           <span>100</span>
         </div>
@@ -507,14 +507,14 @@ export function RiskMeter({
         <ul className="mt-3 space-y-1.5">
           {factors.map((f) => (
             <li key={f.factor} className="flex items-center gap-2 text-xs">
-              <span className="w-9 shrink-0 text-right font-mono font-semibold text-brand-fg">
+              <span className="w-9 shrink-0 text-right font-mono font-semibold text-brand">
                 +{f.points}
               </span>
-              <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100">
                 <div className="h-full bg-brand/70" style={{ width: `${Math.min(100, f.points * 3)}%` }} />
               </div>
-              <span className="text-gray-300">{f.factor.replace(/_/g, " ")}</span>
-              {f.detail && <span className="truncate text-gray-500">— {f.detail}</span>}
+              <span className="text-slate-700">{f.factor.replace(/_/g, " ")}</span>
+              {f.detail && <span className="truncate text-slate-500">— {f.detail}</span>}
             </li>
           ))}
         </ul>
@@ -537,7 +537,7 @@ export function Tooltip({ label, children }: { label: string; children: ReactNod
     >
       {children}
       {show && (
-        <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-base-border-strong bg-base-elevated px-2 py-1 text-2xs text-gray-200 shadow-panel">
+        <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-2xs text-white shadow-lg">
           {label}
         </span>
       )}
@@ -550,7 +550,7 @@ export function Tooltip({ label, children }: { label: string; children: ReactNod
 export function Progress({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
       <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
     </div>
   );

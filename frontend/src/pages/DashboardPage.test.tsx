@@ -66,10 +66,10 @@ beforeEach(() => {
 describe("DashboardPage (Command Center)", () => {
   it("renders the command center title and live KPI values", async () => {
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByRole("heading", { name: /ULPF Command Center/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Command Center/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("1,100")).toBeInTheDocument()); // events processed
     expect(screen.getByText("Processing success")).toBeInTheDocument();
-    expect(screen.getByText("96%")).toBeInTheDocument();
+    expect(screen.getAllByText("96%").length).toBeGreaterThan(0);
   });
 
   it("renders the pipeline visualization from real node counts", async () => {

@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -16,8 +16,8 @@ body,
 
 body {
   margin: 0;
-  background: #080b11;
-  color: #e6e9ef;
+  background: #f2f5fa;
+  color: #0f172a;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -26,20 +26,20 @@ body {
 /* thin, unobtrusive scrollbars that match the surface palette */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2b3546 transparent;
+  scrollbar-color: #cbd5e1 transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #2b3546;
+  background: #cbd5e1;
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #3a4658;
+  background: #94a3b8;
   background-clip: content-box;
 }
 
@@ -62,7 +62,7 @@ body {
     letter-spacing: -0.01em;
   }
   :focus-visible {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid #2563eb;
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -86,26 +86,26 @@ body {
       transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-blue-500 active:bg-blue-600;
+    @apply btn bg-brand text-white shadow-sm hover:bg-blue-700 active:bg-blue-800;
   }
   .btn-ghost {
-    @apply btn border border-base-border bg-base-panel-2 text-gray-200 hover:border-base-border-strong hover:bg-white/5;
+    @apply btn border border-base-border bg-base-panel text-slate-700 hover:border-base-border-strong hover:bg-base-panel-2;
   }
   .btn-danger {
-    @apply btn border border-sev-critical/40 bg-sev-critical/10 text-red-200 hover:bg-sev-critical/20;
+    @apply btn border border-sev-critical/30 bg-red-50 text-sev-critical hover:bg-red-100;
   }
 
   /* --- form controls --- */
   .input {
-    @apply w-full rounded-lg border border-base-border bg-base-panel-2 px-3 py-2 text-sm
-      text-gray-100 placeholder:text-gray-600 outline-none transition-colors
-      focus:border-brand focus:ring-1 focus:ring-brand/60;
+    @apply w-full rounded-lg border border-base-border bg-white px-3 py-2 text-sm
+      text-slate-800 placeholder:text-slate-400 outline-none transition-colors
+      focus:border-brand focus:ring-1 focus:ring-brand/50;
   }
   select.input {
     @apply cursor-pointer;
   }
   .label {
-    @apply mb-1 block text-2xs font-semibold uppercase tracking-wider text-gray-500;
+    @apply mb-1 block text-2xs font-semibold uppercase tracking-wider text-slate-500;
   }
 
   /* --- badges / pills --- */
@@ -118,28 +118,28 @@ body {
     @apply w-full text-sm;
   }
   .tbl thead th {
-    @apply whitespace-nowrap border-b border-base-border px-3 py-2 text-left text-2xs
-      font-semibold uppercase tracking-wider text-gray-500;
+    @apply whitespace-nowrap border-b border-base-border bg-base-panel-2 px-3 py-2 text-left text-2xs
+      font-semibold uppercase tracking-wider text-slate-500;
   }
   .tbl tbody td {
-    @apply border-b border-base-border/60 px-3 py-2 align-middle;
+    @apply border-b border-base-border px-3 py-2 align-middle text-slate-700;
   }
   .tbl tbody tr:last-child td {
     @apply border-b-0;
   }
   .tbl tbody tr.clickable {
-    @apply cursor-pointer transition-colors hover:bg-white/[0.03];
+    @apply cursor-pointer transition-colors hover:bg-blue-50/60;
   }
 
   /* --- misc --- */
   .kbd {
-    @apply rounded border border-base-border-strong bg-base-panel-2 px-1.5 py-0.5 font-mono text-2xs text-gray-400;
+    @apply rounded border border-base-border-strong bg-base-panel-2 px-1.5 py-0.5 font-mono text-2xs text-slate-500;
   }
 }
 
 @layer utilities {
   .glass {
-    background: linear-gradient(180deg, rgba(20, 27, 38, 0.9), rgba(15, 20, 29, 0.9));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 248, 252, 0.92));
     backdrop-filter: blur(8px);
   }
   .tnum {
