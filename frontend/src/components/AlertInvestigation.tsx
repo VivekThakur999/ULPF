@@ -81,7 +81,7 @@ export default function AlertInvestigation({
                   className={`badge ${
                     q.data!.alert.status === s
                       ? "bg-brand text-white"
-                      : "bg-white/[0.06] text-gray-300 hover:bg-white/10"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
                   {s.replace(/_/g, " ")}
@@ -94,7 +94,7 @@ export default function AlertInvestigation({
 
           <section>
             <SectionHeader title="Why this triggered" />
-            <p className="text-sm text-gray-300">{q.data.alert.reason}</p>
+            <p className="text-sm text-slate-700">{q.data.alert.reason}</p>
           </section>
 
           <section>
@@ -114,7 +114,7 @@ export default function AlertInvestigation({
           <section>
             <SectionHeader title="Recommended response" right={<StatusPill status="simulation" />} />
             <div className="surface-2 p-3 text-sm">
-              <p className="font-medium text-gray-100">{q.data.alert.recommended_response.label}</p>
+              <p className="font-medium text-slate-800">{q.data.alert.recommended_response.label}</p>
               <p className="mt-1 text-xs text-gray-400">{q.data.alert.recommended_response.note}</p>
               <p className="mt-1 text-xs text-gray-500">
                 Model this in the Response Simulator — ULPF never enforces it.
@@ -154,7 +154,7 @@ export default function AlertInvestigation({
                       <Badge tone="slate">{t.source}</Badge>
                       {t.severity && <StatusPill status={t.severity} />}
                     </div>
-                    <p className="mt-0.5 text-sm text-gray-200">{t.summary}</p>
+                    <p className="mt-0.5 text-sm text-slate-800">{t.summary}</p>
                   </button>
                 </li>
               ))}
@@ -168,13 +168,13 @@ export default function AlertInvestigation({
                 <button
                   key={e.id}
                   onClick={() => setEventId(e.id)}
-                  className="surface-2 flex w-full items-center gap-2 p-1.5 text-left hover:bg-white/[0.04]"
+                  className="surface-2 flex w-full items-center gap-2 p-1.5 text-left hover:bg-slate-100"
                 >
                   <span className="text-gray-500">
                     {e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "—"}
                   </span>
                   <Badge tone="slate">{e.source}</Badge>
-                  <span className="text-gray-300">{e.event_type}</span>
+                  <span className="text-slate-700">{e.event_type}</span>
                   <span className="ml-auto font-mono text-gray-500">{e.source_ip}</span>
                 </button>
               ))}
@@ -213,7 +213,7 @@ function InvestigationChain({ alert, timeline }: { alert: Alert; timeline: Timel
             <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand/15 text-2xs font-semibold text-brand-fg">
               {i + 1}
             </span>
-            <span className="text-gray-200">{s}</span>
+            <span className="text-slate-800">{s}</span>
           </li>
         ))}
       </ol>
@@ -240,7 +240,7 @@ function CorrelationGraph({ alert, timeline }: { alert: Alert; timeline: Timelin
         <div className="flex flex-1 flex-wrap justify-center gap-2">
           {sources.map(([src, n]) => (
             <div key={src} className="rounded-md border border-base-border bg-base-panel px-3 py-2 text-center text-xs">
-              <div className="font-semibold uppercase tracking-wide text-gray-200">{src}</div>
+              <div className="font-semibold uppercase tracking-wide text-slate-800">{src}</div>
               <div className="text-gray-500">{n} event{n === 1 ? "" : "s"}</div>
             </div>
           ))}
@@ -248,11 +248,11 @@ function CorrelationGraph({ alert, timeline }: { alert: Alert; timeline: Timelin
         <ArrowRight className="mx-auto hidden h-4 w-4 shrink-0 text-gray-600 lg:block" />
         <div className="rounded-md border border-brand/40 bg-brand/10 px-3 py-2 text-center text-xs">
           <div className="font-semibold uppercase tracking-wide text-brand-fg">Shared</div>
-          <div className="font-mono text-gray-300">{pivot}</div>
+          <div className="font-mono text-slate-700">{pivot}</div>
         </div>
         <ArrowRight className="mx-auto hidden h-4 w-4 shrink-0 text-gray-600 lg:block" />
         <div className="rounded-md border border-base-border bg-base-panel px-3 py-2 text-center text-xs">
-          <div className="font-semibold uppercase tracking-wide text-gray-200">{alert.rule_key ?? "rule"}</div>
+          <div className="font-semibold uppercase tracking-wide text-slate-800">{alert.rule_key ?? "rule"}</div>
           <div className="text-gray-500">{alert.severity} · risk {Math.round(alert.risk_score)}</div>
         </div>
       </div>

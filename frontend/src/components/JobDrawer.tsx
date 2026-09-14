@@ -142,7 +142,7 @@ function JobBody({
                   <StatusPill status={r.status} />
                   <StatusPill status={r.security_verdict === "SAFE" ? "safe" : r.security_verdict} />
                 </div>
-                <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-2xs text-gray-300">
+                <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-2xs text-slate-800">
                   {r.content}
                 </pre>
               </div>
@@ -158,7 +158,7 @@ function Row({ k, v }: { k: string; v: ReactNode }) {
   return (
     <div className="flex justify-between gap-4 border-b border-base-border/50 py-1.5">
       <dt className="text-gray-500">{k}</dt>
-      <dd className="text-right text-gray-200">{v}</dd>
+      <dd className="text-right text-slate-800">{v}</dd>
     </div>
   );
 }

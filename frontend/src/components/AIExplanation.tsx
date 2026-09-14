@@ -24,8 +24,8 @@ export default function AIExplanation({ data }: { data: AIExplainResponse }) {
       {/* ---------- ULPF EVIDENCE ---------- */}
       <section className="rounded-lg border-2 border-blue-500/40 bg-blue-500/5 p-4">
         <div className="mb-3 flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-blue-300" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-blue-300">ULPF Evidence</h3>
+          <ShieldCheck className="h-4 w-4 text-blue-700" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-blue-800">ULPF Evidence</h3>
           <Badge tone="blue">authoritative · deterministic</Badge>
         </div>
 
@@ -43,8 +43,8 @@ export default function AIExplanation({ data }: { data: AIExplainResponse }) {
                 <ul className="mt-1 space-y-0.5 text-xs">
                   {alert.risk_breakdown.factors.map((f: any) => (
                     <li key={f.factor} className="flex gap-2">
-                      <span className="w-8 shrink-0 text-right font-mono text-blue-300">+{f.points}</span>
-                      <span className="text-gray-300">{f.factor.replace(/_/g, " ")}</span>
+                      <span className="w-8 shrink-0 text-right font-mono text-blue-700">+{f.points}</span>
+                      <span className="text-slate-700">{f.factor.replace(/_/g, " ")}</span>
                       <span className="truncate text-gray-500">— {f.detail}</span>
                     </li>
                   ))}
@@ -64,7 +64,7 @@ export default function AIExplanation({ data }: { data: AIExplainResponse }) {
               </div>
             )}
             {ev.security_verdict && ev.security_verdict !== "SAFE" && (
-              <div className="mb-2 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-200">
+              <div className="mb-2 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
                 Security Shield verdict: <b>{ev.security_verdict}</b>
               </div>
             )}
@@ -83,7 +83,7 @@ export default function AIExplanation({ data }: { data: AIExplainResponse }) {
               </p>
             )}
             {ev.raw_log && (
-              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded bg-base-bg p-2 font-mono text-[11px] text-gray-300">
+              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded bg-base-bg p-2 font-mono text-[11px] text-slate-800">
                 {ev.raw_log}
               </pre>
             )}
@@ -94,15 +94,15 @@ export default function AIExplanation({ data }: { data: AIExplainResponse }) {
       {/* ---------- AI EXPLANATION ---------- */}
       <section className="rounded-lg border-2 border-purple-500/40 bg-purple-500/5 p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Sparkles className="h-4 w-4 text-purple-300" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-purple-300">AI Explanation</h3>
+          <Sparkles className="h-4 w-4 text-purple-700" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-purple-800">AI Explanation</h3>
           <Badge tone="slate">{data.provider}</Badge>
           <Badge tone={data.offline ? "green" : "amber"}>{data.offline ? "LOCAL / OFFLINE" : "external"}</Badge>
           {data.model && <Badge tone="slate">model: {data.model}</Badge>}
           {e.fallback_from && <Badge tone="amber">fell back from {e.fallback_from}</Badge>}
         </div>
 
-        <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-200/90">
+        <div className="rounded border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900">
           <AlertTriangle className="mr-1 inline h-3 w-3" />
           {e.disclaimer}
         </div>
@@ -115,9 +115,9 @@ export default function AIExplanation({ data }: { data: AIExplainResponse }) {
             <ul className="space-y-1 text-xs">
               {e.important_fields.map((f, i) => (
                 <li key={i}>
-                  <span className="font-mono text-purple-200">{f.field}</span>
+                  <span className="font-mono text-purple-800">{f.field}</span>
                   {": "}
-                  <span className="font-mono text-gray-300">{f.value}</span>
+                  <span className="font-mono text-slate-700">{f.value}</span>
                   {f.note && <span className="text-gray-500"> — {f.note}</span>}
                 </li>
               ))}
@@ -132,7 +132,7 @@ export default function AIExplanation({ data }: { data: AIExplainResponse }) {
         {e.suggested_steps.length > 0 && (
           <div className="mt-3">
             <h4 className="mb-1 text-xs font-semibold uppercase text-gray-500">Suggested Investigation Steps</h4>
-            <ol className="list-decimal space-y-1 pl-5 text-xs text-gray-300">
+            <ol className="list-decimal space-y-1 pl-5 text-xs text-slate-700">
               {e.suggested_steps.map((s, i) => (
                 <li key={i}>{s}</li>
               ))}
@@ -148,7 +148,7 @@ function Row({ k, v }: { k: string; v: unknown }) {
   return (
     <div className="flex justify-between gap-3 border-b border-blue-500/10 py-0.5">
       <dt className="shrink-0 text-gray-500">{k}</dt>
-      <dd className="text-right text-gray-200">{v ? String(v) : "—"}</dd>
+      <dd className="text-right text-slate-800">{v ? String(v) : "—"}</dd>
     </div>
   );
 }
@@ -158,7 +158,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="mt-3">
       <h4 className="mb-1 text-xs font-semibold uppercase text-gray-500">{title}</h4>
-      <p className="text-sm text-gray-200">{children}</p>
+      <p className="text-sm text-slate-800">{children}</p>
     </div>
   );
 }

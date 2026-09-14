@@ -64,7 +64,7 @@ export default function TemplateCompressionFlow({ rawLogId }: { rawLogId: string
               className={`rounded-md border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition ${
                 stage === s
                   ? "border-brand bg-brand/15 text-brand-fg"
-                  : "border-base-border text-gray-400 hover:bg-white/5"
+                  : "border-base-border text-slate-500 hover:bg-slate-100"
               }`}
             >
               {s}
@@ -78,7 +78,7 @@ export default function TemplateCompressionFlow({ rawLogId }: { rawLogId: string
         {stage === "RAW LOG" && (
           <>
             <p className="mb-1 text-gray-500">Original raw log ({originalBytes} bytes)</p>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-gray-200">
+            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-slate-800">
               {d.original}
             </pre>
           </>
@@ -90,7 +90,7 @@ export default function TemplateCompressionFlow({ rawLogId }: { rawLogId: string
               Deterministic clustering assigned this line to a template shape.
             </p>
             {tpl.data ? (
-              <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-gray-200">
+              <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-slate-800">
                 {tpl.data.pattern}
               </pre>
             ) : (
@@ -121,7 +121,7 @@ export default function TemplateCompressionFlow({ rawLogId }: { rawLogId: string
               {d.variables.map((v, i) => (
                 <span
                   key={i}
-                  className="rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[11px] text-amber-300"
+                  className="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] text-amber-900"
                 >
                   {v}
                 </span>
@@ -135,7 +135,7 @@ export default function TemplateCompressionFlow({ rawLogId }: { rawLogId: string
             <p className="mb-1 text-gray-500">
               Stored form: template reference + variables ({compactBytes} bytes vs {originalBytes} original)
             </p>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-gray-200">
+            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-slate-800">
               {compact}
             </pre>
             <div className="mt-2 flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function TemplateCompressionFlow({ rawLogId }: { rawLogId: string
               Persisted as a <span className="font-mono">template_matches</span> row — the original
               raw log is also kept untouched for audit.
             </p>
-            <pre className="overflow-x-auto font-mono text-gray-300">
+            <pre className="overflow-x-auto font-mono text-slate-800">
 {`raw_log_id : ${d.raw_log_id}
 template   : ${templateKey}
 variables  : ${d.variables.length} values
@@ -171,16 +171,16 @@ separators : default (single space) unless stored`}
             <p className="mb-1 text-gray-500">
               template + variables (+ this record’s separators) → exact original text
             </p>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-gray-200">
+            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-slate-800">
               {d.reconstructed}
             </pre>
             <div className="mt-2">
               {d.exact_match ? (
-                <span className="rounded bg-emerald-500/15 px-2 py-1 text-emerald-300">
+                <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-800">
                   ✓ Exact reconstruction verified (byte-for-byte equal to the original)
                 </span>
               ) : (
-                <span className="rounded bg-red-500/15 px-2 py-1 text-red-300">
+                <span className="rounded bg-red-100 px-2 py-1 text-red-800">
                   ✕ Reconstruction mismatch
                 </span>
               )}

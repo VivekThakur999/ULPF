@@ -102,8 +102,8 @@ export default function ProcessingJobsPage() {
                     <Progress value={done} max={j.total_records || 1} />
                   </td>
                   <td className="text-right tnum">{j.total_records.toLocaleString()}</td>
-                  <td className="text-right tnum text-emerald-300/90">{j.processed_records.toLocaleString()}</td>
-                  <td className={`text-right tnum ${errs ? "text-amber-300" : "text-gray-500"}`}>{errs}</td>
+                  <td className="text-right tnum text-emerald-700">{j.processed_records.toLocaleString()}</td>
+                  <td className={`text-right tnum ${errs ? "text-amber-700" : "text-gray-500"}`}>{errs}</td>
                   <td className="text-right tnum text-gray-400">{j.processing_rate.toFixed(0)}/s</td>
                   <td className="text-xs text-gray-400">{duration(j.started_at, j.finished_at)}</td>
                   <td className="whitespace-nowrap text-xs text-gray-500">{relTime(j.created_at)}</td>

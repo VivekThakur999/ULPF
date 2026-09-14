@@ -118,12 +118,12 @@ export default function AssistantPage() {
                     : "border-base-border bg-base-panel-2 hover:border-base-border-strong"
                 }`}
               >
-                <m.icon className={`mt-0.5 h-4 w-4 shrink-0 ${activeMode ? "text-brand-fg" : "text-gray-500"}`} />
+                <m.icon className={`mt-0.5 h-4 w-4 shrink-0 ${activeMode ? "text-brand-fg" : "text-slate-500"}`} />
                 <span>
-                  <span className={`block text-sm font-medium ${activeMode ? "text-brand-fg" : "text-gray-200"}`}>
+                  <span className={`block text-sm font-medium ${activeMode ? "text-brand-fg" : "text-slate-700"}`}>
                     {m.label}
                   </span>
-                  <span className="block text-2xs text-gray-500">{m.hint}</span>
+                  <span className="block text-2xs text-slate-500">{m.hint}</span>
                 </span>
               </button>
             );
@@ -148,12 +148,12 @@ export default function AssistantPage() {
                   <button
                     key={ev.id}
                     onClick={() => setSelectedEvent(ev.id)}
-                    className={`flex w-full items-center gap-2 border-b border-base-border/50 px-2.5 py-2 text-left text-xs last:border-0 hover:bg-white/[0.04] ${
+                    className={`flex w-full items-center gap-2 border-b border-base-border/50 px-2.5 py-2 text-left text-xs last:border-0 hover:bg-slate-50 ${
                       selectedEvent === ev.id ? "bg-brand/10" : ""
                     }`}
                   >
                     <Badge tone="slate">{ev.source}</Badge>
-                    <span className="text-gray-200">{ev.event_type ?? "event"}</span>
+                    <span className="text-slate-800">{ev.event_type ?? "event"}</span>
                     <span className="text-gray-500">{ev.host}</span>
                     <span className="ml-auto font-mono text-gray-500">{ev.source_ip}</span>
                   </button>

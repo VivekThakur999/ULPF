@@ -25,7 +25,7 @@ import {
 
 function SimBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/35">
+    <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-amber-800 ring-1 ring-amber-300">
       Simulation only
     </span>
   );
@@ -107,7 +107,7 @@ export default function ResponseSimulatorPage() {
             <Field k="Timestamp" v={selectedAlert.ts ? new Date(selectedAlert.ts).toLocaleString() : "—"} />
             <div className="col-span-2 sm:col-span-3">
               <dt className="label">Reason (ULPF, deterministic)</dt>
-              <dd className="text-gray-300">{selectedAlert.reason}</dd>
+              <dd className="text-slate-700">{selectedAlert.reason}</dd>
             </div>
           </dl>
         )}
@@ -145,7 +145,7 @@ export default function ResponseSimulatorPage() {
 
       {sim && <SimulationResult sim={sim} />}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-200">Simulation history</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-slate-800">Simulation history</h2>
       {history.isLoading ? (
         <Spinner />
       ) : (history.data ?? []).length === 0 ? (
@@ -199,9 +199,9 @@ function RecommendationPanel({ data }: { data: RecommendResponse }) {
       <SectionHeader title="Recommended response" right={<StatusPill status="simulation" />} />
       <div className="flex items-center gap-2">
         <span className="text-lg font-semibold text-brand-fg">{r.label}</span>
-        <span className="badge bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25">{r.category}</span>
+        <span className="badge bg-slate-100 text-slate-700 ring-1 ring-slate-200">{r.category}</span>
       </div>
-      <p className="mt-1 text-sm text-gray-300">
+      <p className="mt-1 text-sm text-slate-700">
         <span className="text-gray-500">Why: </span>
         {r.rationale}
       </p>
@@ -211,12 +211,12 @@ function RecommendationPanel({ data }: { data: RecommendResponse }) {
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
           {Object.entries(data.evidence.counts ?? {}).map(([k, v]) => (
             <span key={k}>
-              {k.replace(/_/g, " ")}: <b className="text-gray-200">{String(v)}</b>
+              {k.replace(/_/g, " ")}: <b className="text-slate-800">{String(v)}</b>
             </span>
           ))}
           {(data.evidence.shield_verdicts ?? []).length > 0 && (
             <span>
-              shield: <b className="text-amber-300">{(data.evidence.shield_verdicts as string[]).join(", ")}</b>
+              shield: <b className="text-amber-800">{(data.evidence.shield_verdicts as string[]).join(", ")}</b>
             </span>
           )}
         </div>
@@ -235,7 +235,7 @@ function RecommendationPanel({ data }: { data: RecommendResponse }) {
           <ActionTile label="Mode" value={primary.mode} />
           <div className="sm:col-span-3">
             <div className="label">Expected result</div>
-            <div className="text-xs text-gray-300">{primary.detail}</div>
+            <div className="text-xs text-slate-700">{primary.detail}</div>
           </div>
         </div>
       </div>
@@ -248,31 +248,31 @@ function SimulationResult({ sim }: { sim: SimulateResponse }) {
   return (
     <div className="surface bg-surface-sheen my-4 border-emerald-500/25 p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="badge bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30">
+        <span className="badge bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300">
           Simulation complete
         </span>
         <SimBadge />
         <span className="text-xs text-gray-500">audit id {sim.audit_id.slice(0, 8)}…</span>
       </div>
-      <p className="text-xs text-amber-200/90">{sim.disclaimer}</p>
+      <p className="text-xs text-amber-800">{sim.disclaimer}</p>
 
       {p && (
         <>
           <div className="mt-4 flex flex-col items-center gap-1.5 text-center text-sm">
             <div className="rounded-lg border border-base-border bg-base-panel px-4 py-2">
               <div className="label">Current state</div>
-              <div className="font-semibold text-emerald-300">{p.state_change.before}</div>
+              <div className="font-semibold text-emerald-700">{p.state_change.before}</div>
               {p.target && <div className="text-2xs text-gray-500">{p.target}</div>}
             </div>
             <ArrowDown className="h-4 w-4 text-gray-700" />
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-amber-200">
-              <div className="label text-amber-300/80">Simulated change</div>
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-amber-900">
+              <div className="label text-amber-800/80">Simulated change</div>
               <div className="font-mono text-xs">{p.kind}</div>
             </div>
             <ArrowDown className="h-4 w-4 text-gray-700" />
             <div className="rounded-lg border border-base-border bg-base-panel px-4 py-2">
               <div className="label">Simulated state</div>
-              <div className="font-semibold text-red-300">{p.state_change.after}</div>
+              <div className="font-semibold text-red-700">{p.state_change.after}</div>
             </div>
           </div>
 
@@ -305,7 +305,7 @@ function ActionTile({ label, value }: { label: string; value: React.ReactNode })
   return (
     <div className="surface-2 p-2">
       <div className="label">{label}</div>
-      <div className="font-mono text-xs text-gray-200">{value}</div>
+      <div className="font-mono text-xs text-slate-800">{value}</div>
     </div>
   );
 }

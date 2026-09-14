@@ -2,6 +2,7 @@ import { type ReactNode, useState } from "react";
 import { AlertTriangle, Inbox, Loader2, RotateCw, X } from "lucide-react";
 import clsx from "clsx";
 import { statusKey, statusStyle, type StatusKey } from "@/lib/status";
+import { TONE, type AccentTone } from "@/lib/tone";
 
 /* ------------------------------------------------------------------ headers */
 
@@ -289,38 +290,46 @@ export function Kpi({
   value,
   sub,
   status,
+  tone,
   icon: Icon,
   loading,
 }: {
   label: string;
   value: ReactNode;
   sub?: ReactNode;
+  /** Dynamic health color (e.g. turns red only once real alerts exist). */
   status?: StatusKey | string;
+  /** Fixed category/identity color (e.g. this KPI is always "data" = sky). Takes precedence over `status`. */
+  tone?: AccentTone;
   icon?: typeof Inbox;
   loading?: boolean;
 }) {
-  const dot = status ? statusStyle(status).dot : "#cbd5e1";
+  const bar = tone ? TONE[tone].bar : status ? undefined : "bg-slate-200";
+  const iconClass = tone ? TONE[tone].icon : status ? undefined : "text-slate-400";
+  const dot = !tone && status ? statusStyle(status).dot : undefined;
   return (
-    <div className="surface bg-surface-sheen p-4 transition-shadow hover:shadow-md">
+    <div className="surface bg-surface-sheen relative overflow-hidden p-4 transition-shadow hover:shadow-md">
+      <span
+        className={clsx("absolute inset-x-0 top-0 h-1", bar)}
+        style={dot ? { background: dot } : undefined}
+        aria-hidden
+      />
       <div className="flex items-center justify-between">
         <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} aria-hidden />
-          {Icon && <Icon className="h-3.5 w-3.5 text-slate-400" />}
-        </span>
+        {Icon && <Icon className={clsx("h-4 w-4", iconClass ?? "text-slate-400")} style={dot ? { color: dot } : undefined} />}
       </div>
       {loading ? (
-        <Skeleton className="mt-2 h-7 w-20" />
+        <Skeleton className="mt-2 h-8 w-20" />
       ) : (
-        <div className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-900 tnum">{value}</div>
+        <div className="mt-2 text-[1.75rem] font-bold leading-none tracking-tight text-slate-900 tnum">{value}</div>
       )}
-      {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
+      {sub && <div className="mt-1.5 text-xs text-slate-500">{sub}</div>}
     </div>
   );
 }
 
 export function KpiGrid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{children}</div>;
+  return <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">{children}</div>;
 }
 
 /* ------------------------------------------------------------------ drawer */

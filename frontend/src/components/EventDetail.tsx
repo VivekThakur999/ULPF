@@ -24,11 +24,11 @@ const STAGE_LABEL: Record<string, string> = {
   validation: "Validation",
 };
 
-type Tab = "universal" | "raw" | "pipeline" | "related";
+type Tab = "fields" | "security" | "parser" | "raw" | "correlated";
 
 export default function EventDetail({ eventId, onClose }: { eventId: string; onClose: () => void }) {
   const q = useQuery({ queryKey: ["log", eventId], queryFn: () => getLogDetail(eventId) });
-  const [tab, setTab] = useState<Tab>("universal");
+  const [tab, setTab] = useState<Tab>("fields");
   const ev = q.data?.event;
 
   return (
@@ -57,91 +57,147 @@ export default function EventDetail({ eventId, onClose }: { eventId: string; onC
       ) : (
         <>
           <TransformFlow event={q.data.event} />
+          <EventKpis event={q.data.event} correlatedCount={q.data.related_events.length} />
 
           <div className="mb-3">
             <Tabs<Tab>
               tabs={[
-                { key: "universal", label: "Universal Event" },
+                { key: "fields", label: "Normalized Fields" },
+                { key: "security", label: "Security & PII" },
+                { key: "parser", label: "Parser & Pipeline" },
                 { key: "raw", label: "Raw Log" },
-                { key: "pipeline", label: "Pipeline" },
-                { key: "related", label: `Correlation (${q.data.related_events.length})` },
+                { key: "correlated", label: `Correlated Activity (${q.data.related_events.length})` },
               ]}
               value={tab}
               onChange={setTab}
             />
           </div>
 
-          {tab === "universal" && <UniversalView e={q.data.event} pii={q.data.pii_transformations} />}
+          {tab === "fields" && <FieldsView e={q.data.event} />}
+
+          {tab === "security" && (
+            <div className="space-y-5 text-sm">
+              <section>
+                <SectionHeader title="Security" hint="Security Shield verdict + any detections raised on this record" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusPill status={q.data.raw_log?.security_verdict ?? "SAFE"} />
+                  <span className="text-xs text-gray-500">
+                    Screened before parsing — the verdict never changes after ingestion.
+                  </span>
+                </div>
+                {q.data.security_events.length > 0 ? (
+                  <div className="mt-2 space-y-1.5">
+                    {q.data.security_events.map((s) => (
+                      <div key={s.id} className="rounded-lg border border-sev-high/40 bg-sev-high/10 p-2 text-xs">
+                        <b>{s.detection_type}</b> ({s.severity}) — {s.reason}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-gray-500">No security-shield detections on this record.</p>
+                )}
+              </section>
+
+              <section>
+                <SectionHeader title="PII Protection" hint={`Mode: ${q.data.event.pii_mode}`} />
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge tone={q.data.event.pii_protected ? "green" : "slate"}>
+                    {q.data.event.pii_protected ? "Protected" : "Not protected"}
+                  </Badge>
+                  <Badge tone="slate">{q.data.pii_transformations.length} field(s) transformed</Badge>
+                </div>
+                {q.data.pii_transformations.length > 0 ? (
+                  <ul className="space-y-1 text-xs text-gray-500">
+                    {q.data.pii_transformations.map((t, i) => (
+                      <li key={i}>
+                        <span className="font-mono text-slate-700">{t.field}</span> ({t.kind}) →{" "}
+                        <span className="font-mono text-brand-fg">{t.pseudonym}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-gray-500">No identifiers on this record required pseudonymization.</p>
+                )}
+              </section>
+            </div>
+          )}
+
+          {tab === "parser" && (
+            <div className="space-y-5 text-sm">
+              <section>
+                <SectionHeader title="Parser" />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <MiniStat label="Name" value={q.data.event.parser} />
+                  <MiniStat label="Version" value={q.data.event.parser_version} />
+                  <MiniStat label="Confidence" value={`${(q.data.event.confidence * 100).toFixed(0)}%`} />
+                  <MiniStat label="Schema" value={q.data.event.schema_version} />
+                  <MiniStat label="Template" value={q.data.event.template_id ?? "—"} mono />
+                  {q.data.job && <MiniStat label="Detected format" value={q.data.job.detected_format} />}
+                </div>
+              </section>
+
+              <section>
+                <SectionHeader title="Pipeline" hint="Every stage this record passed through" />
+                <ol className="space-y-2">
+                  {q.data.pipeline.map((s, i) => (
+                    <li key={s.stage} className="surface-2 p-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-2xs text-gray-500">{i + 1}</span>
+                        <span className="font-medium text-slate-800">{STAGE_LABEL[s.stage] ?? s.stage}</span>
+                        <StatusPill
+                          status={s.status === "warn" ? "medium" : s.status === "error" ? "failed" : s.status === "skipped" ? "idle" : "ok"}
+                          label={s.status}
+                          dot={false}
+                        />
+                        <span className="text-xs text-gray-400">{s.summary}</span>
+                      </div>
+                      {s.transformations.length > 0 && (
+                        <ul className="ml-6 mt-1 list-disc text-xs text-gray-400">
+                          {s.transformations.map((t, j) => (
+                            <li key={j}>{Object.entries(t).map(([k, v]) => `${k}=${v}`).join(" ")}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {s.warnings.map((w, j) => (
+                        <p key={j} className="ml-6 text-xs text-sev-medium">⚠ {w}</p>
+                      ))}
+                      {s.errors.map((w, j) => (
+                        <p key={j} className="ml-6 text-xs text-sev-critical">✖ {w}</p>
+                      ))}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            </div>
+          )}
 
           {tab === "raw" && (
             <div className="space-y-3 text-sm">
               <div className="flex flex-wrap items-center gap-2">
-                <StatusPill status={q.data.raw_log?.security_verdict ?? "SAFE"} />
                 {q.data.job && <Badge tone="blue">{q.data.job.detected_format}</Badge>}
                 <span className="text-xs text-gray-500">
                   line {q.data.raw_log?.line_number} · {q.data.job?.filename}
                 </span>
               </div>
-              <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg border border-base-border bg-base-bg p-3 font-mono text-xs text-gray-200">
+              <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg border border-base-border bg-base-bg p-3 font-mono text-xs text-slate-800">
                 {q.data.raw_log?.content ?? q.data.event.raw_log}
               </pre>
-              {q.data.security_events.length > 0 && (
-                <div className="rounded-lg border border-sev-high/40 bg-sev-high/10 p-2 text-xs">
-                  {q.data.security_events.map((s) => (
-                    <div key={s.id}>
-                      <b>{s.detection_type}</b> ({s.severity}) — {s.reason}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
-          {tab === "pipeline" && (
-            <ol className="space-y-2 text-sm">
-              {q.data.pipeline.map((s, i) => (
-                <li key={s.stage} className="surface-2 p-2.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-2xs text-gray-500">{i + 1}</span>
-                    <span className="font-medium text-gray-200">{STAGE_LABEL[s.stage] ?? s.stage}</span>
-                    <StatusPill
-                      status={s.status === "warn" ? "medium" : s.status === "error" ? "failed" : s.status === "skipped" ? "idle" : "ok"}
-                      label={s.status}
-                      dot={false}
-                    />
-                    <span className="text-xs text-gray-400">{s.summary}</span>
-                  </div>
-                  {s.transformations.length > 0 && (
-                    <ul className="ml-6 mt-1 list-disc text-xs text-gray-400">
-                      {s.transformations.map((t, j) => (
-                        <li key={j}>{Object.entries(t).map(([k, v]) => `${k}=${v}`).join(" ")}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {s.warnings.map((w, j) => (
-                    <p key={j} className="ml-6 text-xs text-sev-medium">⚠ {w}</p>
-                  ))}
-                  {s.errors.map((w, j) => (
-                    <p key={j} className="ml-6 text-xs text-sev-critical">✖ {w}</p>
-                  ))}
-                </li>
-              ))}
-            </ol>
-          )}
-
-          {tab === "related" && (
+          {tab === "correlated" && (
             <div className="space-y-1.5 text-sm">
               {q.data.related_events.length === 0 && (
                 <p className="text-gray-500">No correlated events.</p>
               )}
               {q.data.related_events.map((e) => (
                 <div key={e.id} className="surface-2 flex flex-wrap items-center gap-2 p-2 text-xs">
-                  <span className="text-gray-500">
+                  <span className="font-mono text-gray-500">
                     {e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "—"}
                   </span>
                   <Badge tone="slate">{e.source}</Badge>
-                  <span className="text-gray-300">{e.event_type}</span>
-                  <span className="text-gray-400">{e.host}</span>
+                  <span className="text-slate-700">{e.event_type}</span>
+                  <span className="text-slate-500">{e.host}</span>
                   <span className="ml-auto font-mono text-gray-500">{e.source_ip}</span>
                 </div>
               ))}
@@ -156,40 +212,74 @@ export default function EventDetail({ eventId, onClose }: { eventId: string; onC
 /** Makes "raw log -> pipeline -> universal event" visually obvious at a glance. */
 function TransformFlow({ event }: { event: UniversalEvent }) {
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-base-border bg-base-bg/50 p-2.5 text-xs">
-      <div className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1">
-        <FileText className="h-3.5 w-3.5 text-gray-500" />
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-base-border bg-base-bg/50 p-2.5 text-xs">
+      <div className="flex items-center gap-1.5 rounded bg-slate-100 px-2 py-1 text-slate-600">
+        <FileText className="h-3.5 w-3.5 text-slate-500" />
         Raw Log
       </div>
-      <ArrowRight className="h-3.5 w-3.5 text-gray-700" />
-      <div className="flex items-center gap-1.5 rounded bg-blue-500/10 px-2 py-1 text-blue-300">
-        {event.parser} <span className="text-blue-500/70">v{event.parser_version}</span>
+      <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+      <div className="flex items-center gap-1.5 rounded bg-blue-100 px-2 py-1 text-blue-800">
+        {event.parser} <span className="text-blue-700/80">v{event.parser_version}</span>
       </div>
-      <ArrowRight className="h-3.5 w-3.5 text-gray-700" />
+      <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
       {event.pii_mode !== "OFF" && (
         <>
-          <div className="flex items-center gap-1.5 rounded bg-purple-500/10 px-2 py-1 text-purple-300">
+          <div className="flex items-center gap-1.5 rounded bg-purple-100 px-2 py-1 text-purple-800">
             <ShieldCheck className="h-3.5 w-3.5" /> PII {event.pii_mode}
           </div>
-          <ArrowRight className="h-3.5 w-3.5 text-gray-700" />
+          <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
         </>
       )}
-      <div className="flex items-center gap-1.5 rounded bg-emerald-500/10 px-2 py-1 text-emerald-300">
+      <div className="flex items-center gap-1.5 rounded bg-emerald-100 px-2 py-1 text-emerald-800">
         <Sparkles className="h-3.5 w-3.5" /> Universal Event
-        <span className="text-emerald-500/70">schema {event.schema_version}</span>
+        <span className="text-emerald-700/80">schema {event.schema_version}</span>
       </div>
-      <span className="ml-auto text-gray-600">confidence {(event.confidence * 100).toFixed(0)}%</span>
     </div>
   );
 }
 
-function UniversalView({
-  e,
-  pii,
+/** ULPF EVENT at-a-glance strip — severity / confidence / processing status / correlation, all real. */
+function EventKpis({ event, correlatedCount }: { event: UniversalEvent; correlatedCount: number }) {
+  return (
+    <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <MiniStat label="Severity" value={<StatusPill status={event.severity ?? "info"} />} raw />
+      <MiniStat label="Confidence" value={`${(event.confidence * 100).toFixed(0)}%`} />
+      <MiniStat
+        label="Processing"
+        value={<StatusPill status={event.processing_status} dot={false} />}
+        raw
+      />
+      <MiniStat label="Correlated" value={String(correlatedCount)} />
+    </div>
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+  mono,
+  raw,
 }: {
-  e: UniversalEvent;
-  pii: { field: string; kind: string; pseudonym: string }[];
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+  raw?: boolean;
 }) {
+  return (
+    <div className="surface-2 p-2.5">
+      <div className="text-2xs uppercase tracking-wide text-gray-500">{label}</div>
+      {raw ? (
+        <div className="mt-1">{value}</div>
+      ) : (
+        <div className={`mt-0.5 truncate text-sm font-semibold text-slate-800 ${mono ? "font-mono text-xs" : ""}`}>
+          {value}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FieldsView({ e }: { e: UniversalEvent }) {
   const rows: [string, unknown][] = Object.entries({
     timestamp: e.timestamp,
     source: e.source,
@@ -214,22 +304,14 @@ function UniversalView({
 
   return (
     <div className="space-y-4 text-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        {e.severity && <StatusPill status={e.severity} />}
-        <Badge tone="blue">{e.parser} v{e.parser_version}</Badge>
-        <Badge tone="slate">schema {e.schema_version}</Badge>
-        <Badge tone={e.pii_protected ? "green" : "slate"}>PII {e.pii_mode}</Badge>
-        <Badge tone="slate">confidence {(e.confidence * 100).toFixed(0)}%</Badge>
-      </div>
-
       <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-3 border-b border-base-border/50 py-1">
             <span className="text-gray-500">{k}</span>
-            <span className="truncate text-right font-mono text-xs text-gray-200">
+            <span className="truncate text-right font-mono text-xs text-slate-800">
               {String(v)}
               {e.field_confidence[k] !== undefined && (
-                <span className="ml-2 text-2xs text-gray-600">
+                <span className="ml-2 text-2xs text-slate-400">
                   {(e.field_confidence[k] * 100).toFixed(0)}%
                 </span>
               )}
@@ -242,19 +324,6 @@ function UniversalView({
         <div>
           <SectionHeader title="Message" />
           <p className="rounded-lg border border-base-border bg-base-bg p-2 text-xs">{e.message}</p>
-        </div>
-      )}
-
-      {pii.length > 0 && (
-        <div>
-          <SectionHeader title="PII transformations" />
-          <ul className="text-xs text-gray-400">
-            {pii.map((t, i) => (
-              <li key={i}>
-                {t.field} ({t.kind}) → <span className="text-brand-fg">{t.pseudonym}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
 

@@ -99,7 +99,7 @@ export default function IncidentsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <StatusPill status={inc.topBand} label={`${inc.topBand.toUpperCase()} · risk ${Math.round(inc.maxRisk)}`} />
-                    <span className="font-mono text-sm text-gray-200">{inc.label}</span>
+                    <span className="font-mono text-sm text-slate-800">{inc.label}</span>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
                     {inc.alerts.length} alert{inc.alerts.length === 1 ? "" : "s"}
@@ -114,11 +114,11 @@ export default function IncidentsPage() {
                   <button
                     key={a.id}
                     onClick={() => setSelected(a.id)}
-                    className="surface-2 flex w-full flex-wrap items-center gap-2 p-2 text-left text-xs hover:bg-white/[0.04]"
+                    className="surface-2 flex w-full flex-wrap items-center gap-2 p-2 text-left text-xs hover:bg-slate-100"
                   >
                     <StatusPill status={a.severity} />
                     <span className="font-mono text-gray-500">{a.rule_key ?? "—"}</span>
-                    <span className="min-w-0 flex-1 truncate text-gray-200">{a.title}</span>
+                    <span className="min-w-0 flex-1 truncate text-slate-800">{a.title}</span>
                     <Badge tone="slate">{a.status.replace(/_/g, " ")}</Badge>
                     <span className="text-gray-500">{relTime(a.ts)}</span>
                   </button>

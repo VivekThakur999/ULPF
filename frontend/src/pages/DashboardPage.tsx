@@ -22,7 +22,6 @@ import {
   Kpi,
   KpiGrid,
   LiveDot,
-  PageHeader,
   SectionHeader,
   SkeletonTable,
   StatusPill,
@@ -75,6 +74,7 @@ export default function DashboardPage() {
   const items = alerts.data?.items ?? [];
   const active = items.filter((a) => !["RESOLVED", "FALSE_POSITIVE"].includes(a.status)).length;
   const highCrit = items.filter((a) => ["high", "critical"].includes(a.risk_breakdown.band)).length;
+  const shieldFlags = d?.shield_events ?? 0;
 
   const streamRows = useMemo(() => {
     const rows = stream.data?.items ?? [];
@@ -107,57 +107,78 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        eyebrow="Overview"
-        title="Command Center"
-        subtitle="Universal log preprocessing, cross-source correlation, and security intelligence — every figure below is queried live, nothing is simulated."
-        actions={
+    <div className="space-y-8">
+      {/* ---------------------------------------------------------- sub-header */}
+      <div className="surface bg-surface-sheen flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
           <div className="flex items-center gap-3">
-            <span className="badge bg-slate-100 text-slate-600 ring-1 ring-slate-200 uppercase tracking-wider">Live Mode</span>
-            <LiveDot label={d ? `updated ${new Date(d.generated_at).toLocaleTimeString()}` : "Live"} />
-            <button className="btn-ghost py-1.5 text-xs" onClick={refreshAll}>
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </button>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Command Center</h1>
+            <span className="badge bg-slate-100 text-slate-600 ring-1 ring-slate-200 uppercase tracking-wider">
+              Live Mode
+            </span>
           </div>
-        }
-      />
+          <p className="mt-1.5 max-w-2xl text-sm text-slate-500">
+            Universal log preprocessing, cross-source correlation, and security intelligence — every figure
+            below is queried live, nothing is simulated.
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <LiveDot label={d ? `updated ${new Date(d.generated_at).toLocaleTimeString()}` : "Live"} />
+          <button className="btn-ghost py-1.5 text-xs" onClick={refreshAll}>
+            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+          </button>
+        </div>
+      </div>
 
+      {/* ---------------------------------------------------------- KPI row */}
       {overview.isError ? (
         <ErrorState error={overview.error} onRetry={overview.refetch} />
       ) : (
         <KpiGrid>
-          <Kpi label="Events processed" value={(d?.cards.processed ?? 0).toLocaleString()} icon={Database} loading={overview.isLoading} />
+          <Kpi
+            label="Events processed"
+            value={(d?.cards.processed ?? 0).toLocaleString()}
+            tone="sky"
+            icon={Database}
+            loading={overview.isLoading}
+          />
           <Kpi
             label="Events / sec"
             value={(d?.cards.avg_processing_rate ?? 0).toFixed(0)}
             sub={d ? `peak ${d.cards.peak_processing_rate.toFixed(0)}/s` : undefined}
+            tone="blue"
             icon={Zap}
             loading={overview.isLoading}
           />
           <Kpi
             label="Active alerts"
             value={active}
-            status={active ? "investigating" : "safe"}
+            status={active ? "critical" : "safe"}
             icon={AlertTriangle}
             loading={alerts.isLoading}
           />
           <Kpi
             label="High / critical"
             value={highCrit}
-            status={highCrit ? "high" : "safe"}
+            status={highCrit ? "critical" : "safe"}
             icon={AlertTriangle}
             loading={alerts.isLoading}
           />
           <Kpi
             label="Shield events"
-            value={(d?.shield_events ?? 0).toLocaleString()}
-            status={(d?.shield_events ?? 0) > 0 ? "medium" : "safe"}
+            value={shieldFlags.toLocaleString()}
+            status={shieldFlags > 0 ? "critical" : "safe"}
             icon={ShieldX}
             loading={overview.isLoading}
           />
-          <Kpi label="Sources" value={d?.source_status.length ?? 0} icon={Database} loading={overview.isLoading} />
-          <Kpi label="Normalized events" value={(d?.cards.normalized_events ?? 0).toLocaleString()} icon={Gauge} loading={overview.isLoading} />
+          <Kpi label="Sources" value={d?.source_status.length ?? 0} tone="blue" icon={Database} loading={overview.isLoading} />
+          <Kpi
+            label="Normalized events"
+            value={(d?.cards.normalized_events ?? 0).toLocaleString()}
+            tone="violet"
+            icon={Gauge}
+            loading={overview.isLoading}
+          />
           <Kpi
             label="Processing success"
             value={d ? `${d.processing_success_rate}%` : "—"}
@@ -168,23 +189,22 @@ export default function DashboardPage() {
         </KpiGrid>
       )}
 
+      {/* ---------------------------------------------------------- pipeline */}
       <PipelineFlow />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        {/* LEFT (60%): live event stream */}
+      {/* ---------------------------------------------------------- events + risk/health */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* LEFT (~60%): live event stream */}
         <div className="lg:col-span-7">
-          <div className="surface bg-surface-sheen flex h-full flex-col p-4">
-            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <SectionHeader
-                title="Live event stream"
-                hint="Real-time normalized events across every source"
-              />
+          <div className="surface bg-surface-sheen flex h-full flex-col p-6">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <SectionHeader title="Live Event Stream" hint="Real-time normalized events across every source" />
               <div className="flex items-center gap-1 rounded-lg bg-base-panel-2 p-1">
                 {STREAM_FILTERS.map((f) => (
                   <button
                     key={f.key}
                     onClick={() => setStreamFilter(f.key)}
-                    className={`rounded-md px-2 py-1 text-2xs font-semibold transition-colors ${
+                    className={`rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
                       streamFilter === f.key ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
                     }`}
                   >
@@ -216,7 +236,7 @@ export default function DashboardPage() {
                       <th>Identity</th>
                       <th>Source IP</th>
                       <th>Severity</th>
-                      <th className="text-right">Risk</th>
+                      <th className="text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -226,7 +246,7 @@ export default function DashboardPage() {
                           {relTime(e.timestamp)}
                         </td>
                         <td className="text-xs text-slate-700">{e.source}</td>
-                        <td className="text-xs">{e.event_type ?? "—"}</td>
+                        <td className="text-xs text-slate-800">{e.event_type ?? "—"}</td>
                         <td className="text-xs text-slate-500">{e.host ?? "—"}</td>
                         <td className="font-mono text-2xs text-slate-500">{e.username ?? e.email ?? "—"}</td>
                         <td className="font-mono text-2xs text-slate-500">{e.source_ip ?? "—"}</td>
@@ -238,7 +258,7 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </DataTable>
-                <div className="mt-3 flex items-center justify-between text-2xs text-slate-500">
+                <div className="mt-4 flex items-center justify-between text-2xs text-slate-500">
                   <span>
                     Displaying {streamRows.length} of {stream.data?.total.toLocaleString()} events
                   </span>
@@ -256,11 +276,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* RIGHT (40%): risk spectrum + source activity + system health */}
-        <div className="flex flex-col gap-5 lg:col-span-5">
-          <div className="surface bg-surface-sheen p-4">
+        {/* RIGHT (~40%): risk spectrum + source activity + system health */}
+        <div className="flex flex-col gap-6 lg:col-span-5">
+          <div className="surface bg-surface-sheen p-6">
             <SectionHeader
-              title="Risk spectrum"
+              title="Risk Spectrum"
               hint={`Distribution of ${riskBands.total.toLocaleString()} analyzed alerts`}
               right={<PieChart className="h-4 w-4 text-slate-400" />}
             />
@@ -291,12 +311,12 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="surface bg-surface-sheen p-4">
-            <SectionHeader title="Source activity" hint="Events processed by source" />
+          <div className="surface bg-surface-sheen p-6">
+            <SectionHeader title="Source Activity" hint="Events processed by source" />
             {topSources.rows.length === 0 ? (
               <p className="text-xs text-slate-500">No sources configured yet.</p>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {topSources.rows.map((s) => {
                   const pct = topSources.total > 0 ? (s.events_processed / topSources.total) * 100 : 0;
                   return (
@@ -308,7 +328,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+                        <div className="h-full rounded-full bg-sky-500" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );
@@ -317,25 +337,25 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="surface bg-surface-sheen p-4">
-            <SectionHeader title="System health" right={<Terminal className="h-4 w-4 text-slate-400" />} />
-            <div className="grid grid-cols-2 gap-2">
-              <div className="surface-2 p-2.5">
+          <div className="surface bg-surface-sheen p-6">
+            <SectionHeader title="System Health" right={<Terminal className="h-4 w-4 text-slate-400" />} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="surface-2 p-3">
                 <div className="label">Backend</div>
                 <StatusPill
                   status={health.isError ? "error" : health.data?.status === "ok" ? "online" : "processing"}
                   label={health.isLoading ? "connecting…" : health.isError ? "unreachable" : (health.data?.status ?? "—")}
                 />
               </div>
-              <div className="surface-2 p-2.5">
+              <div className="surface-2 p-3">
                 <div className="label">Database</div>
                 <div className="text-sm font-semibold text-slate-800">{health.data?.database ?? "—"}</div>
               </div>
-              <div className="surface-2 p-2.5">
+              <div className="surface-2 p-3">
                 <div className="label">Success rate</div>
                 <div className="text-sm font-semibold text-slate-800">{d ? `${d.processing_success_rate}%` : "—"}</div>
               </div>
-              <div className="surface-2 p-2.5">
+              <div className="surface-2 p-3">
                 <div className="label">Shield events</div>
                 <div className="text-sm font-semibold text-slate-800">{d?.shield_events.toLocaleString() ?? "—"}</div>
               </div>

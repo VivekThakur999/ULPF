@@ -134,7 +134,7 @@ export default function AppLayout() {
           {!collapsed && (
             <div className="min-w-0">
               <div className="text-sm font-semibold tracking-tight text-white">ULPF</div>
-              <div className="truncate text-[10px] uppercase tracking-[0.16em] text-nav-text/70">
+              <div className="truncate text-[10px] uppercase tracking-[0.16em] text-nav-text/90">
                 Universal Log Pre-processing
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function AppLayout() {
           {NAV_GROUPS.map((group) => (
             <div key={group.title}>
               {!collapsed && (
-                <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-nav-text/50">
+                <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-nav-text/80">
                   {group.title}
                 </div>
               )}
@@ -168,7 +168,7 @@ export default function AppLayout() {
                       {({ isActive }) => (
                         <>
                           {isActive && (
-                            <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-blue-400" />
+                            <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r bg-blue-400" />
                           )}
                           <Icon className="h-4 w-4 shrink-0" />
                           {!collapsed && <span className="truncate">{label}</span>}
@@ -226,7 +226,7 @@ export default function AppLayout() {
         <header className="glass sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-base-border px-6">
           <div className="flex items-center gap-2 text-sm">
             <span className="font-semibold text-slate-400">ULPF</span>
-            <span className="text-slate-300">/</span>
+            <span className="text-slate-400">/</span>
             <span className="font-medium text-slate-800">{current.label}</span>
           </div>
 

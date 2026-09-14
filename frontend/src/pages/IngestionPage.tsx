@@ -110,7 +110,7 @@ export default function IngestionPage() {
                     <Progress value={done} max={j.total_records || 1} />
                   </td>
                   <td className="text-right tnum">{j.total_records.toLocaleString()}</td>
-                  <td className={`text-right tnum ${errs ? "text-amber-300" : "text-gray-500"}`}>{errs}</td>
+                  <td className={`text-right tnum ${errs ? "text-amber-700" : "text-gray-500"}`}>{errs}</td>
                   <td className="whitespace-nowrap text-xs text-gray-500">{relTime(j.created_at)}</td>
                   <td>
                     <StatusPill status={j.status} />
@@ -139,7 +139,7 @@ function UploadCard({ onError, onDone }: { onError: (s: string) => void; onDone:
   });
   return (
     <Card>
-      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-200">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-800">
         <FileUp className="h-4 w-4 text-brand-fg" /> Upload file
       </div>
       <label className="label">Source name</label>
@@ -176,7 +176,7 @@ function SampleCard({ onError, onDone }: { onError: (s: string) => void; onDone:
 
   return (
     <Card>
-      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-200">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-800">
         <FlaskConical className="h-4 w-4 text-brand-fg" /> Import synthetic sample
       </div>
       <select className="input mb-2" value={path} onChange={(e) => setPath(e.target.value)}>
@@ -208,7 +208,7 @@ function SimulateCard({ onError, onDone }: { onError: (s: string) => void; onDon
   });
   return (
     <Card>
-      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-200">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-800">
         <PlayCircle className="h-4 w-4 text-brand-fg" /> Simulated stream
       </div>
       <label className="label">Record count</label>

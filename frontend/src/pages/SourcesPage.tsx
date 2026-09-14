@@ -96,7 +96,7 @@ export default function SourcesPage() {
           <tbody>
             {items.map((s) => (
               <tr key={s.id}>
-                <td className="font-medium text-gray-200">{s.name}</td>
+                <td className="font-medium text-slate-800">{s.name}</td>
                 <td className="text-gray-400">{s.category}</td>
                 <td className="text-gray-400">{s.adapter}</td>
                 <td>
@@ -132,7 +132,7 @@ export default function SourcesPage() {
           {adapters.data?.map((a) => (
             <Card key={a.kind}>
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-200">{a.kind}</span>
+                <span className="font-medium text-slate-800">{a.kind}</span>
                 <StatusPill
                   status={a.mvp_supported ? "online" : "idle"}
                   label={a.mvp_supported ? "MVP READY" : a.status}

@@ -159,8 +159,8 @@ function PageHeaderRow({
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <div className="mb-1 text-2xs font-semibold uppercase tracking-[0.18em] text-brand-fg/80">Pipeline</div>
-        <h1 className="text-xl font-semibold tracking-tight text-gray-50">Template Explorer</h1>
-        <p className="mt-1 max-w-3xl text-sm text-gray-400">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Template Explorer</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-500">
           Discover recurring structures across heterogeneous logs. Templates are mined from the real
           ingested raw logs; every occurrence stays reconstructable.
         </p>
@@ -218,7 +218,7 @@ function TemplateDrawer({ templateKey, onClose }: { templateKey: string; onClose
                 .map(([src, n]) => (
                   <div key={src} className="flex items-center gap-2 text-xs">
                     <span className="w-28 shrink-0 truncate text-gray-400">{src}</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded bg-white/[0.06]">
+                    <div className="h-2 flex-1 overflow-hidden rounded bg-slate-100">
                       <div
                         className="h-full bg-brand"
                         style={{ width: `${(n / detail.data!.occurrences) * 100}%` }}
@@ -250,14 +250,14 @@ function TemplateDrawer({ templateKey, onClose }: { templateKey: string; onClose
                       <Badge tone="slate">{ex.source}</Badge>
                       {ex.ts && <span>{new Date(ex.ts).toLocaleString()}</span>}
                     </div>
-                    <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-2xs text-gray-300">
+                    <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-2xs text-slate-800">
                       {ex.raw}
                     </pre>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {ex.variables.map((v, i) => (
                         <span
                           key={i}
-                          className="rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] text-amber-300"
+                          className="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] text-amber-900"
                         >
                           {v}
                         </span>

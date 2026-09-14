@@ -117,7 +117,7 @@ function Body({ d }: { d: AnalyticsOverview }) {
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-200">Source status</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-slate-800">Source status</h2>
       {d.source_status.length === 0 ? (
         <EmptyState title="No sources yet" hint="Upload a file or import a sample on the Ingestion page." />
       ) : (
@@ -135,7 +135,7 @@ function Body({ d }: { d: AnalyticsOverview }) {
           <tbody>
             {d.source_status.map((s) => (
               <tr key={s.name}>
-                <td className="font-medium text-gray-200">{s.name}</td>
+                <td className="font-medium text-slate-800">{s.name}</td>
                 <td className="text-gray-400">{s.category}</td>
                 <td className="text-gray-400">{s.adapter}</td>
                 <td>

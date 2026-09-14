@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { searchLogs, type LogFilters } from "@/services/endpoints";
+import { logStats, searchLogs, type LogFilters } from "@/services/endpoints";
 import EventDetail from "@/components/EventDetail";
 import {
   DataTable,
@@ -14,15 +14,20 @@ import {
   relTime,
 } from "@/components/ui";
 
-const FILTER_FIELDS: { key: keyof LogFilters; label: string; placeholder: string }[] = [
-  { key: "text", label: "Full text", placeholder: "message / raw / host…" },
-  { key: "source", label: "Source", placeholder: "linux, firewall…" },
+/** Filters backed by real facet counts from /logs/stats — rendered as selects. */
+const FACET_FIELDS: { key: keyof LogFilters; label: string }[] = [
+  { key: "source", label: "Source" },
+  { key: "host", label: "Host" },
+  { key: "event_type", label: "Event type" },
+  { key: "severity", label: "Severity" },
+  { key: "parser", label: "Parser" },
+  { key: "processing_status", label: "Processing status" },
+];
+
+/** Free-text filters — no fixed enum of values on the backend. */
+const TEXT_FIELDS: { key: keyof LogFilters; label: string; placeholder: string }[] = [
   { key: "source_ip", label: "Source IP", placeholder: "raw IP or IP_… token" },
-  { key: "username", label: "Username", placeholder: "raw or USER_… token" },
-  { key: "event_type", label: "Event type", placeholder: "authentication_failure" },
-  { key: "severity", label: "Severity", placeholder: "high" },
-  { key: "host", label: "Host", placeholder: "db-02" },
-  { key: "parser", label: "Parser", placeholder: "linux_auth" },
+  { key: "username", label: "Identity", placeholder: "raw or USER_… token" },
 ];
 
 const PAGE = 50;
@@ -33,6 +38,7 @@ export default function LogExplorerPage() {
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
 
+  const stats = useQuery({ queryKey: ["log-stats"], queryFn: logStats, refetchInterval: 30000 });
   const q = useQuery({
     queryKey: ["logs", applied, page],
     queryFn: () => searchLogs({ ...applied, limit: PAGE, offset: page * PAGE }),
@@ -55,6 +61,12 @@ export default function LogExplorerPage() {
     setDraft(next);
     setPage(0);
   };
+  const setFacet = (key: keyof LogFilters, value: string) => {
+    const next = { ...draft, [key]: value || undefined };
+    setDraft(next);
+    setApplied(Object.fromEntries(Object.entries(next).filter(([, v]) => v)));
+    setPage(0);
+  };
 
   const total = q.data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
@@ -68,27 +80,68 @@ export default function LogExplorerPage() {
       />
 
       <div className="surface bg-surface-sheen mb-4 p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {FILTER_FIELDS.map((f) => (
-            <div key={f.key}>
-              <label className="label">{f.label}</label>
-              <input
-                className="input"
-                placeholder={f.placeholder}
-                value={(draft[f.key] as string) ?? ""}
-                onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && apply()}
-              />
-            </div>
-          ))}
+        {/* Full-text search bar — the primary way to query the corpus */}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              className="input pl-9 font-mono"
+              placeholder="search message, raw log, host…"
+              value={draft.text ?? ""}
+              onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && apply()}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="btn-primary" onClick={apply}>
+              Search
+            </button>
+            <button className="btn-ghost" onClick={clearAll}>
+              Clear
+            </button>
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <button className="btn-primary" onClick={apply}>
-            <Search className="h-4 w-4" /> Search
-          </button>
-          <button className="btn-ghost" onClick={clearAll}>
-            Clear
-          </button>
+
+        {/* Facet filters — real values + counts from /logs/stats */}
+        <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {FACET_FIELDS.map((f) => {
+            const options = stats.data?.facets[f.key as string] ?? [];
+            const id = `filter-${f.key}`;
+            return (
+              <div key={f.key}>
+                <label className="label" htmlFor={id}>{f.label}</label>
+                <select
+                  id={id}
+                  className="input"
+                  value={(draft[f.key] as string) ?? ""}
+                  onChange={(e) => setFacet(f.key, e.target.value)}
+                >
+                  <option value="">All {f.label.toLowerCase()}s</option>
+                  {options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.value} ({o.count})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })}
+          {TEXT_FIELDS.map((f) => {
+            const id = `filter-${f.key}`;
+            return (
+              <div key={f.key}>
+                <label className="label" htmlFor={id}>{f.label}</label>
+                <input
+                  id={id}
+                  className="input"
+                  placeholder={f.placeholder}
+                  value={(draft[f.key] as string) ?? ""}
+                  onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && apply()}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -113,43 +166,62 @@ export default function LogExplorerPage() {
             <thead>
               <tr>
                 <th>Time</th>
-                <th>Source</th>
-                <th>Event type</th>
-                <th>Host</th>
-                <th>Identity</th>
+                <th>Host / Source</th>
+                <th>Event signature</th>
+                <th className="hidden lg:table-cell">Identity</th>
                 <th>Source IP</th>
+                <th className="hidden lg:table-cell">Destination IP</th>
                 <th>Severity</th>
-                <th>Parser</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {q.data.items.map((e) => (
                 <tr key={e.id} className="clickable" onClick={() => setSelected(e.id)}>
-                  <td className="whitespace-nowrap text-xs text-gray-400" title={e.timestamp ?? ""}>
+                  <td className="whitespace-nowrap font-mono text-2xs text-slate-500" title={e.timestamp ?? ""}>
                     {relTime(e.timestamp)}
                   </td>
-                  <td className="text-xs text-gray-300">{e.source}</td>
-                  <td className="text-xs">{e.event_type ?? "—"}</td>
-                  <td className="text-xs text-gray-400">{e.host ?? "—"}</td>
-                  <td className="font-mono text-2xs text-gray-400">{e.username ?? e.email ?? "—"}</td>
-                  <td className="font-mono text-2xs text-gray-400">{e.source_ip ?? "—"}</td>
+                  <td>
+                    <div className="text-xs font-semibold text-slate-800">{e.host ?? "—"}</div>
+                    <div className="text-2xs text-slate-500">{e.source}</div>
+                  </td>
+                  <td>
+                    <div className="text-xs text-slate-800">{e.event_type ?? "—"}</div>
+                    {(e.action || e.status) && (
+                      <div className="text-2xs text-slate-500">
+                        {[e.action, e.status].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
+                  </td>
+                  <td className="hidden font-mono text-2xs text-slate-500 lg:table-cell">
+                    {e.username ?? e.email ?? "—"}
+                  </td>
+                  <td className="font-mono text-2xs text-slate-500">{e.source_ip ?? "—"}</td>
+                  <td className="hidden font-mono text-2xs text-slate-500 lg:table-cell">
+                    {e.destination_ip ?? "—"}
+                  </td>
                   <td>{e.severity ? <StatusPill status={e.severity} /> : "—"}</td>
-                  <td className="text-2xs text-gray-500">{e.parser}</td>
+                  <td>{e.processing_status ? <StatusPill status={e.processing_status} dot={false} /> : "—"}</td>
                 </tr>
               ))}
             </tbody>
           </DataTable>
-          <div className="mt-3 flex gap-2 text-xs">
-            <button className="btn-ghost py-1" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-              Previous
-            </button>
-            <button
-              className="btn-ghost py-1"
-              disabled={(page + 1) * PAGE >= total}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </button>
+          <div className="mt-3 flex items-center justify-between text-xs">
+            <span className="text-gray-500">
+              Showing {page * PAGE + 1}–{Math.min(total, (page + 1) * PAGE)} of {total.toLocaleString()}
+            </span>
+            <div className="flex gap-2">
+              <button className="btn-ghost py-1" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                Previous
+              </button>
+              <button
+                className="btn-ghost py-1"
+                disabled={(page + 1) * PAGE >= total}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </>
       ) : (

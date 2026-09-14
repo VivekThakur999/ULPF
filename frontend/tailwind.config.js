@@ -5,30 +5,36 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Light enterprise content surfaces (cards, tables, drawers, main canvas).
+        // Light enterprise surfaces — matches stitch_*/DESIGN.md's "Base Canvases &
+        // Structural Neutrals": white cards inset within a very light slate frame.
         base: {
-          bg: "#f2f5fa",
-          panel: "#ffffff",
-          "panel-2": "#f6f8fc",
+          bg: "#f8fafc", // page canvas / global frame
+          panel: "#ffffff", // cards, tables, drawers — always pure white
+          "panel-2": "#f1f5f9", // sunken/inset sub-panels inside a card
           elevated: "#ffffff",
           border: "#e2e8f0",
           "border-strong": "#cbd5e1",
         },
-        // Deep navy structural chrome — sidebar / nav rail only.
+        // Light structural chrome — sidebar / header rail (NOT dark; DESIGN.md treats
+        // the nav rail as "Canvas Alternate", one step off pure white).
         nav: {
-          bg: "#0b1220",
-          panel: "#101a2e",
-          border: "rgba(255,255,255,0.08)",
-          text: "#93a4bd",
+          bg: "#f8fafc",
+          panel: "#ffffff",
+          border: "#e2e8f0",
+          text: "#64748b",
           "text-active": "#ffffff",
         },
-        // Electric blue — primary interaction / brand.
+        // Crimson — primary brand + interaction (buttons, active nav, selection).
+        // Kept visually distinct from `sev.critical` by *treatment*: brand is always
+        // a solid fill (button, active pill, ring); critical is always a soft wash
+        // (badge, accent bar, left-stripe) — never the other way around.
         brand: {
-          DEFAULT: "#2563eb",
-          fg: "#2563eb",
-          dim: "#dbeafe",
+          DEFAULT: "#dc2626",
+          hover: "#be123c",
+          fg: "#dc2626",
+          dim: "#fef2f2",
         },
-        // Purple — AI / intelligence.
+        // Purple — AI / intelligence, exclusively.
         ai: {
           DEFAULT: "#7c3aed",
           fg: "#7c3aed",
@@ -55,8 +61,12 @@ export default {
         "2xs": ["0.6875rem", { lineHeight: "1rem" }],
       },
       boxShadow: {
-        panel: "0 1px 2px rgba(15,23,42,0.04), 0 8px 20px -14px rgba(15,23,42,0.16)",
-        glow: "0 0 0 1px rgba(37,99,235,0.35), 0 0 16px -4px rgba(37,99,235,0.35)",
+        // DESIGN.md "Level 1 (Card & Module Resting)"
+        panel: "0 1px 3px 0 rgba(15,23,42,0.05), 0 1px 2px -1px rgba(15,23,42,0.03)",
+        // "Level 2 (Interactive Floating / Active Hover)"
+        hover: "0 4px 6px -1px rgba(15,23,42,0.07), 0 2px 4px -2px rgba(15,23,42,0.05)",
+        // "Level 3 (Overlays & Slide-out Panels)"
+        overlay: "0 10px 15px -3px rgba(15,23,42,0.08), 0 4px 6px -4px rgba(15,23,42,0.03)",
       },
       backgroundImage: {
         "grid-faint":

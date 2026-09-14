@@ -91,7 +91,7 @@ export default function PipelineDebuggerPage() {
         {SAMPLES.map((s) => (
           <button
             key={s.label}
-            className="badge bg-white/10 text-gray-300 hover:bg-white/20"
+            className="badge bg-slate-100 text-slate-700 hover:bg-slate-200"
             onClick={() => {
               setRaw(s.raw);
               run.reset();
@@ -268,7 +268,7 @@ function StageView({ stage }: { stage: PipelineStageResult }) {
       {stage.transformations.length > 0 && (
         <div>
           <div className="label">Transformations</div>
-          <ul className="text-xs text-gray-300">
+          <ul className="text-xs text-slate-700">
             {stage.transformations.map((t, i) => (
               <li key={i}>· {Object.entries(t).map(([k, v]) => `${k}=${v}`).join("  ")}</li>
             ))}

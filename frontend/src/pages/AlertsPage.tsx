@@ -171,7 +171,7 @@ function AlertRow({ alert, onOpen }: { alert: Alert; onOpen: () => void }) {
         <StatusPill status={alert.severity} />
       </td>
       <td className="font-mono text-xs text-gray-400">{alert.rule_key ?? "—"}</td>
-      <td className="max-w-[280px] truncate font-medium text-gray-100" title={alert.title}>
+      <td className="max-w-[280px] truncate font-medium text-slate-900" title={alert.title}>
         {alert.title}
       </td>
       <td className="text-xs text-gray-400">{alert.source}</td>

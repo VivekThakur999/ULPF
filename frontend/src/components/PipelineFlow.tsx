@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { analyticsPipeline, type PipelineNode } from "@/services/endpoints";
 import { ErrorState, LiveDot, SectionHeader, Skeleton } from "@/components/ui";
+import { TONE, type AccentTone } from "@/lib/tone";
 
 const NODE_ICON: Record<string, LucideIcon> = {
   sources: Database,
@@ -31,13 +32,44 @@ const NODE_ICON: Record<string, LucideIcon> = {
   alert: Siren,
 };
 
-const NODE_STYLE: Record<PipelineNode["status"], { accent: string; chip: string; text: string; dot: string }> = {
-  idle: { accent: "bg-slate-200", chip: "bg-slate-100 text-slate-500", text: "text-slate-400", dot: "#94a3b8" },
-  ok: { accent: "bg-emerald-500", chip: "bg-emerald-100 text-emerald-800", text: "text-emerald-700", dot: "#059669" },
-  running: { accent: "bg-blue-500", chip: "bg-blue-100 text-blue-800", text: "text-blue-700", dot: "#2563eb" },
-  warn: { accent: "bg-amber-500", chip: "bg-amber-100 text-amber-900", text: "text-amber-700", dot: "#d97706" },
-  critical: { accent: "bg-red-500", chip: "bg-red-100 text-red-800", text: "text-red-700", dot: "#dc2626" },
+/** What kind of stage this is — a fixed identity color, so a healthy pipeline
+ * reads as many deliberately-colored stages rather than one repeated "ok" green. */
+const NODE_IDENTITY: Record<string, AccentTone> = {
+  sources: "sky",
+  ingestion: "blue",
+  detection: "emerald",
+  parsing: "sky",
+  cleaning: "cyan",
+  pii: "purple",
+  normalization: "blue",
+  validation: "emerald",
+  correlation: "violet",
+  risk: "amber",
+  alert: "red",
 };
+
+/** Short, static description of what each real stage does — labeling, not data. */
+const NODE_CAPTION: Record<string, string> = {
+  sources: "Heterogeneous log inputs",
+  ingestion: "Raw record intake",
+  detection: "Injection & integrity screening",
+  parsing: "Format detection + field extraction",
+  cleaning: "Dedup, validation, quarantine",
+  pii: "Deterministic pseudonymization",
+  normalization: "Universal event schema",
+  validation: "Schema + field validation",
+  correlation: "Cross-source event linking",
+  risk: "Transparent, disclosed scoring",
+  alert: "SOC alert dispatch",
+};
+
+/** Resolve a node's visual tone: a real problem always wins over identity color. */
+function toneFor(n: PipelineNode) {
+  if (n.status === "critical") return TONE.red;
+  if (n.status === "warn") return TONE.amber;
+  if (n.status === "idle") return TONE.slate;
+  return TONE[NODE_IDENTITY[n.key] ?? "slate"];
+}
 
 const DETAIL_LABEL: Record<string, string> = {
   configured_sources: "configured sources",
@@ -96,26 +128,26 @@ export default function PipelineFlow() {
   const flowing = nodes.some((n) => n.status === "running");
 
   return (
-    <div className="surface bg-surface-sheen p-4">
+    <div className="surface bg-surface-sheen p-6">
       <SectionHeader
-        title="ULPF processing pipeline"
+        title="ULPF Processing Pipeline"
         hint="Log Sources → Ingestion → Security Shield → Parsing → Cleaning → PII → Normalization → Validation → Correlation → Risk → Alert"
         right={flowing ? <LiveDot label="processing" /> : <LiveDot label="idle" />}
       />
 
       {q.isLoading ? (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {Array.from({ length: 11 }).map((_, i) => (
-            <Skeleton key={i} className="h-[104px] rounded-xl" />
+            <Skeleton key={i} className="h-[152px] rounded-xl" />
           ))}
         </div>
       ) : q.isError ? (
         <ErrorState error={q.error} onRetry={q.refetch} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             {nodes.map((n, i) => {
-              const st = NODE_STYLE[n.status];
+              const t = toneFor(n);
               const Icon = NODE_ICON[n.key] ?? Layers;
               const isActive = selected === n.key;
               return (
@@ -123,22 +155,25 @@ export default function PipelineFlow() {
                   key={n.key}
                   onClick={() => setSelected(isActive ? null : n.key)}
                   aria-pressed={isActive}
-                  className={`relative flex min-h-[104px] flex-col justify-between overflow-hidden rounded-xl border bg-base-panel-2 p-3 text-left transition-all hover:bg-white hover:shadow-sm ${
-                    isActive ? "border-brand ring-1 ring-brand" : "border-base-border"
+                  className={`relative flex min-h-[152px] flex-col justify-between overflow-hidden rounded-xl border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                    isActive ? "border-brand ring-2 ring-brand/40" : "border-base-border"
                   }`}
                 >
-                  <span className={`absolute inset-x-0 top-0 h-1 ${st.accent}`} aria-hidden />
+                  <span className={`absolute inset-x-0 top-0 h-1.5 ${t.bar}`} aria-hidden />
                   <div className="flex items-center justify-between">
                     <span className="text-2xs font-bold uppercase tracking-wider text-slate-400">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <Icon className={`h-4 w-4 ${st.text}`} />
+                    <span className={`grid h-7 w-7 place-items-center rounded-lg ${t.chip}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-800">{n.label}</div>
-                    <div className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs font-bold tnum ${st.chip}`}>
-                      {n.count.toLocaleString()}
-                    </div>
+                    <div className="text-sm font-bold text-slate-900">{n.label}</div>
+                    <div className="mt-0.5 text-2xs leading-snug text-slate-500">{NODE_CAPTION[n.key]}</div>
+                  </div>
+                  <div className={`inline-flex w-fit items-center gap-1 rounded px-1.5 py-0.5 text-2xs font-bold tnum ${t.chip}`}>
+                    {n.count.toLocaleString()}
                   </div>
                 </button>
               );
@@ -146,7 +181,7 @@ export default function PipelineFlow() {
           </div>
 
           {active ? (
-            <div className="mt-3 rounded-lg border border-base-border bg-base-panel-2 p-3 text-xs">
+            <div className="mt-4 rounded-lg border border-base-border bg-base-panel-2 p-4 text-xs">
               <div className="mb-1.5 font-semibold text-slate-800">{active.label} — detail</div>
               {Object.keys(active.detail).length === 0 ? (
                 <p className="text-slate-500">No breakdown for this stage.</p>
@@ -163,7 +198,7 @@ export default function PipelineFlow() {
               {active.count === 0 && <p className="mt-1 text-slate-400">No activity yet at this stage.</p>}
             </div>
           ) : (
-            <p className="mt-3 text-2xs text-slate-400">Select a stage for its breakdown.</p>
+            <p className="mt-4 text-2xs text-slate-400">Select a stage for its breakdown.</p>
           )}
         </>
       )}

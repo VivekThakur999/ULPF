@@ -34,7 +34,7 @@ export default function TemplatePattern({
         return (
           <span key={i}>
             {sep}
-            <span className="rounded bg-amber-500/20 px-1 text-amber-300" title={`variable · ${t}`}>
+            <span className="rounded bg-amber-100 px-1 text-amber-900" title={`variable · ${t}`}>
               {val !== null ? val : `<${t}>`}
             </span>
           </span>

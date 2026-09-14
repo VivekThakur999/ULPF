@@ -51,7 +51,7 @@ export default function ParserPacksPage() {
         <Card className="mb-4">
           <div className="flex items-center gap-2 text-sm">
             <Package className="h-4 w-4 text-brand-fg" />
-            <span className="font-medium text-gray-200">WASM sandbox</span>
+            <span className="font-medium text-slate-800">WASM sandbox</span>
             <StatusPill
               status={wasm.data.available ? "online" : "error"}
               label={wasm.data.available ? `available (${wasm.data.runtime})` : "unavailable"}
@@ -86,7 +86,7 @@ export default function ParserPacksPage() {
           <tbody>
             {parsers.data!.map((p) => (
               <tr key={p.name} className="clickable" onClick={() => setSelected(p.name)}>
-                <td className="font-medium text-gray-200">{p.name}</td>
+                <td className="font-medium text-slate-800">{p.name}</td>
                 <td className="font-mono text-xs">{p.format}</td>
                 <td className="tnum">{p.version}</td>
                 <td>
@@ -140,20 +140,20 @@ function ParserDrawer({ name, onClose }: { name: string; onClose: () => void }) 
               <div className="label">Embedded self-tests</div>
               <div className="flex items-center gap-2 text-sm">
                 {detail.data.tests.passed === detail.data.tests.total && detail.data.tests.total > 0 ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                 ) : (
-                  <XCircle className="h-4 w-4 text-amber-400" />
+                  <XCircle className="h-4 w-4 text-amber-600" />
                 )}
                 {detail.data.tests.passed}/{detail.data.tests.total} passing
               </div>
               {detail.data.tests.results.map((r) => (
                 <div key={r.index} className="mt-1 text-xs">
-                  <span className={r.ok ? "text-emerald-400" : "text-sev-critical"}>
+                  <span className={r.ok ? "text-emerald-700" : "text-sev-critical"}>
                     {r.ok ? "PASS" : "FAIL"}
                   </span>{" "}
                   <span className="font-mono text-gray-500">{r.input.slice(0, 70)}</span>
                   {!r.ok && (
-                    <pre className="ml-6 text-[10px] text-amber-300">
+                    <pre className="ml-6 text-[10px] text-amber-800">
                       {JSON.stringify(r.mismatches, null, 1)}
                     </pre>
                   )}
@@ -182,7 +182,7 @@ function ParserDrawer({ name, onClose }: { name: string; onClose: () => void }) 
                 <div className="mb-1 text-gray-400">
                   can_parse {(testM.data.can_parse * 100).toFixed(0)}% · confidence{" "}
                   {(testM.data.confidence * 100).toFixed(0)}%
-                  {testM.data.partial && <span className="text-amber-400"> · partial</span>}
+                  {testM.data.partial && <span className="text-amber-700"> · partial</span>}
                 </div>
                 <pre className="overflow-x-auto">{JSON.stringify(testM.data.fields, null, 2)}</pre>
                 {testM.data.errors.map((e, i) => (
@@ -282,7 +282,7 @@ function CreatePackDrawer({ onClose }: { onClose: () => void }) {
       {err && <div className="mt-2"><ErrorState error={err} /></div>}
       {validate.data && (
         <div className="mt-2 rounded border border-base-border p-2 text-xs">
-          <span className={validate.data.valid ? "text-emerald-400" : "text-sev-critical"}>
+          <span className={validate.data.valid ? "text-emerald-700" : "text-sev-critical"}>
             {validate.data.valid ? "VALID" : "INVALID"}
           </span>
           {validate.data.problems.map((p, i) => (

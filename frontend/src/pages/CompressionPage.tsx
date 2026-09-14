@@ -120,7 +120,7 @@ export default function CompressionPage() {
                 <td className="text-right tnum">{rec.record_count}</td>
                 <td className="text-right tnum">
                   {rec.reconstructable_count === rec.record_count ? (
-                    <span className="text-emerald-400">{rec.reconstructable_count} ✓</span>
+                    <span className="text-emerald-700">{rec.reconstructable_count} ✓</span>
                   ) : (
                     <span className="text-sev-critical">
                       {rec.reconstructable_count}/{rec.record_count}
@@ -129,7 +129,7 @@ export default function CompressionPage() {
                 </td>
                 <td className="text-right tnum">{bytes(rec.original_bytes)}</td>
                 <td className="text-right tnum">{bytes(rec.total_compressed_bytes)}</td>
-                <td className={`text-right tnum ${rec.reduction_pct >= 0 ? "text-emerald-400" : "text-amber-400"}`}>
+                <td className={`text-right tnum ${rec.reduction_pct >= 0 ? "text-emerald-700" : "text-amber-700"}`}>
                   {rec.reduction_pct.toFixed(1)}%
                 </td>
               </tr>
@@ -182,11 +182,11 @@ function BenchmarkPanel({ r }: { r: BenchmarkResult }) {
 
       {r.mismatches.length > 0 && (
         <div className="mt-4 rounded border border-sev-critical/40 bg-sev-critical/10 p-3 text-xs">
-          <p className="font-semibold text-red-300">
+          <p className="font-semibold text-red-800">
             {r.mismatches.length} record(s) did NOT reconstruct exactly:
           </p>
           {r.mismatches.map((m) => (
-            <pre key={m.raw_log_id} className="mt-1 overflow-x-auto text-[11px] text-gray-300">
+            <pre key={m.raw_log_id} className="mt-1 overflow-x-auto text-[11px] text-slate-800">
               orig: {m.original_preview}
               {"\n"}got:  {m.reconstructed_preview}
             </pre>
@@ -213,10 +213,10 @@ function Metric({
   tone?: "neutral" | "green" | "amber" | "red";
 }) {
   const color =
-    tone === "green" ? "text-emerald-300"
-    : tone === "amber" ? "text-amber-300"
-    : tone === "red" ? "text-red-300"
-    : "text-gray-100";
+    tone === "green" ? "text-emerald-700"
+    : tone === "amber" ? "text-amber-700"
+    : tone === "red" ? "text-red-700"
+    : "text-slate-900";
   return (
     <div className="rounded-md border border-base-border p-3">
       <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
@@ -244,7 +244,7 @@ function BytesBar({
         <span>{label}</span>
         <span className="tabular-nums">{bytes(value)}</span>
       </div>
-      <div className="h-4 w-full overflow-hidden rounded bg-white/5">
+      <div className="h-4 w-full overflow-hidden rounded bg-slate-100">
         <div className={`h-full ${tone}`} style={{ width: `${(value / max) * 100}%` }} />
       </div>
       {note && <p className="mt-0.5 text-[10px] text-gray-600">{note}</p>}
