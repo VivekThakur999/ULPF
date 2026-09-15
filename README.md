@@ -144,8 +144,8 @@ Real-time enterprise streaming, Kafka, distributed processing, OpenSearch scalin
 additional enterprise connectors, threat-intel feeds, SIEM/SOAR integration, real
 firewall/IAM/EDR response, ML anomaly detection, larger local LLMs, cloud deployment,
 multi-tenancy. **None of these are implemented** — see
-[docs/architecture.md](docs/architecture.md#future-scope).
-
+[docs/architecture.md](docs/architecture.md#future-scope).hfhh
+ 
 ## License
 
 MIT — see [LICENSE](LICENSE). All bundled datasets are **synthetic / demo data**.
