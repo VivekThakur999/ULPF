@@ -2,7 +2,24 @@
 name = "ulpf-backend"
 version = "0.1.0"
 description = "Universal Log Pre-processing Framework - backend"
-requires-python = ">=3.11"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "pydantic==2.10.4",
+    "pydantic-settings==2.7.0",
+    "SQLAlchemy==2.0.36",
+    "alembic==1.14.0",
+    "psycopg2-binary==2.9.10",
+    "bcrypt==4.2.1",
+    "PyJWT==2.10.1",
+    "python-multipart==0.0.20",
+    "email-validator==2.2.0",
+    "PyYAML==6.0.2",
+    "python-dateutil==2.9.0.post0",
+    "wasmtime==48.0.0",
+    "httpx==0.28.1"
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
