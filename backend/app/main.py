@@ -62,6 +62,7 @@ app.add_middleware(
 
 
 @app.get("/health", tags=["system"])
+@app.get("/api/health", tags=["system"], include_in_schema=False)
 def health():
     db_ok = True
     try:

@@ -6,9 +6,9 @@ Never hard-code secrets. All sensitive values come from the environment
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import List
+from typing import Any, List
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,26 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=False,
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _blank_env_vars_use_default(cls, data: Any) -> Any:
+        """Treat a *present but empty* environment variable the same as an
+        *absent* one, for every field.
+
+        Every setting on this model already has a safe default (see
+        .env.example). Pydantic only applies a field's default when the key
+        is missing from the input - an empty string is a present value, so
+        for typed fields (bool/int/...) it fails validation instead of
+        falling back. Some platforms (Vercel included) inject a variable you
+        configured with a blank value as an actual empty string rather than
+        omitting it, which crashed startup here. Dropping blank entries
+        before field validation restores "unset -> use default" without
+        weakening validation of any value that is actually provided.
+        """
+        if isinstance(data, dict):
+            return {k: v for k, v in data.items() if not (isinstance(v, str) and v.strip() == "")}
+        return data
 
     # --- General ---
     app_name: str = "ULPF - Universal Log Pre-processing Framework"
