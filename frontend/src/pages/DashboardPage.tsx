@@ -76,6 +76,12 @@ export default function DashboardPage() {
   const highCrit = items.filter((a) => ["high", "critical"].includes(a.risk_breakdown.band)).length;
   const shieldFlags = d?.shield_events ?? 0;
 
+  // Real bucketed history for the one KPI where a trend is meaningful and available.
+  const processedSpark = useMemo(
+    () => (d?.charts.events_over_time ?? []).slice(-12).map((b) => b.count),
+    [d],
+  );
+
   const streamRows = useMemo(() => {
     const rows = stream.data?.items ?? [];
     if (streamFilter === "elevated") return rows.filter((r) => ["high", "critical"].includes(r.severity ?? ""));
@@ -107,9 +113,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* ---------------------------------------------------------- sub-header */}
-      <div className="surface bg-surface-sheen flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="surface bg-surface-sheen flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Command Center</h1>
@@ -141,6 +147,7 @@ export default function DashboardPage() {
             tone="sky"
             icon={Database}
             loading={overview.isLoading}
+            spark={processedSpark.length > 1 ? processedSpark : undefined}
           />
           <Kpi
             label="Events / sec"
@@ -193,10 +200,10 @@ export default function DashboardPage() {
       <PipelineFlow />
 
       {/* ---------------------------------------------------------- events + risk/health */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         {/* LEFT (~60%): live event stream */}
         <div className="lg:col-span-7">
-          <div className="surface bg-surface-sheen flex h-full flex-col p-6">
+          <div className="surface bg-surface-sheen flex h-full flex-col p-5">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <SectionHeader title="Live Event Stream" hint="Real-time normalized events across every source" />
               <div className="flex items-center gap-1 rounded-lg bg-base-panel-2 p-1">
@@ -277,8 +284,8 @@ export default function DashboardPage() {
         </div>
 
         {/* RIGHT (~40%): risk spectrum + source activity + system health */}
-        <div className="flex flex-col gap-6 lg:col-span-5">
-          <div className="surface bg-surface-sheen p-6">
+        <div className="flex flex-col gap-5 lg:col-span-5">
+          <div className="surface bg-surface-sheen p-5">
             <SectionHeader
               title="Risk Spectrum"
               hint={`Distribution of ${riskBands.total.toLocaleString()} analyzed alerts`}
@@ -311,7 +318,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="surface bg-surface-sheen p-6">
+          <div className="surface bg-surface-sheen p-5">
             <SectionHeader title="Source Activity" hint="Events processed by source" />
             {topSources.rows.length === 0 ? (
               <p className="text-xs text-slate-500">No sources configured yet.</p>
@@ -337,7 +344,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="surface bg-surface-sheen p-6">
+          <div className="surface bg-surface-sheen p-5">
             <SectionHeader title="System Health" right={<Terminal className="h-4 w-4 text-slate-400" />} />
             <div className="grid grid-cols-2 gap-3">
               <div className="surface-2 p-3">

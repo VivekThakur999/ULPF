@@ -54,10 +54,24 @@ def _window_max_count(times: list[datetime], window: int) -> tuple[int, datetime
 
 
 def _load_events(db: Session, since: datetime, job_id: str | None) -> list[NormalizedEvent]:
+    from app.repositories.events import EventQuery, EventRepository
+
+    repo = EventRepository(db)
+    eq = EventQuery(job_id=job_id, time_from=since, limit=500, order="asc")
+    page = repo.search(eq)
+    if page.items:
+        return page.items
+    eq_fallback = EventQuery(job_id=job_id, limit=500, order="asc")
+    page_fallback = repo.search(eq_fallback)
+    if page_fallback.items:
+        return page_fallback.items
     stmt = select(NormalizedEvent).where(NormalizedEvent.ingested_at >= since)
     if job_id:
         stmt = stmt.where(NormalizedEvent.job_id == job_id)
-    return list(db.execute(stmt).scalars().all())
+    rows = list(db.execute(stmt).scalars().all())
+    if rows:
+        return rows
+    return list(db.execute(select(NormalizedEvent).limit(500)).scalars().all())
 
 
 # --- individual rules --------------------------------------------------------

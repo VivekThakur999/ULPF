@@ -30,6 +30,7 @@ def configure_logging(level: str = "INFO") -> None:
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("python_multipart").setLevel(logging.WARNING)
     logging.getLogger("multipart").setLevel(logging.WARNING)
+    logging.getLogger("pymongo").setLevel(logging.WARNING)
     _CONFIGURED = True
 
 

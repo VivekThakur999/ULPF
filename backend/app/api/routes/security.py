@@ -33,6 +33,26 @@ def list_events(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+
+            mongo_alerts = MongoAlertRepository()
+            items = mongo_alerts.list_security_events(
+                job_id=job_id, verdict=verdict.upper() if verdict else None, limit=limit
+            )
+            total = mongo_alerts.count_security_events(
+                {"verdict": verdict.upper()} if verdict else ({"job_id": job_id} if job_id else {})
+            )
+            return {
+                "total": total,
+                "items": items[offset : offset + limit],
+            }
+        except Exception:
+            pass
+
     q = db.query(SecurityEvent)
     if verdict:
         q = q.filter(SecurityEvent.verdict == verdict.upper())

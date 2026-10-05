@@ -96,7 +96,39 @@ def _scope_raw_logs(db: Session, *, job_id: str | None, source: str | None, limi
     stmt = stmt.order_by(RawLog.received_at.asc(), RawLog.id.asc())
     if limit:
         stmt = stmt.limit(limit)
-    return db.execute(stmt).scalars().all()
+    rows = db.execute(stmt).scalars().all()
+    if rows:
+        return rows
+
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+
+            mongo_ingest = MongoIngestionRepository()
+            _, raw_items = mongo_ingest.list_raw_logs(
+                job_id=job_id, source_name=source, limit=limit or 20000
+            )
+            if raw_items:
+                return [
+                    RawLog(
+                        id=r["id"],
+                        job_id=r.get("job_id", ""),
+                        source_name=r.get("source_name", "unknown"),
+                        line_number=r.get("line_number", 0),
+                        received_at=r.get("received_at"),
+                        content=r.get("content", ""),
+                        content_hash=r.get("content_hash", ""),
+                        status=r.get("status", "PROCESSED"),
+                        security_verdict=r.get("security_verdict", "SAFE"),
+                    )
+                    for r in raw_items
+                ]
+        except Exception:
+            pass
+
+    return []
 
 
 def compress_scope(
@@ -240,7 +272,7 @@ def run_benchmark(
     result.events_per_sec = (len(rows) / elapsed) if elapsed > 0 else float(len(rows))
 
     if persist:
-        db.add(CompressionRecord(
+        comp_model = CompressionRecord(
             ts=datetime.now(timezone.utc), job_id=job_id, scope=scope,
             original_bytes=original_bytes, compressed_bytes=compressed_bytes,
             metadata_bytes=metadata_bytes, total_compressed_bytes=total_compressed,
@@ -249,8 +281,37 @@ def run_benchmark(
             processing_seconds=elapsed, events_per_sec=result.events_per_sec,
             method="template+varsub",
             detail={"mismatches": result.mismatches},
-        ))
+        )
+        db.add(comp_model)
         db.commit()
+
+        from app.core.config import settings
+
+        if settings.use_mongodb:
+            try:
+                from app.repositories.mongodb.templates import MongoTemplateRepository
+
+                mongo_templates = MongoTemplateRepository()
+                mongo_templates.insert_compression_record({
+                    "id": comp_model.id,
+                    "job_id": job_id,
+                    "scope": scope,
+                    "original_bytes": original_bytes,
+                    "compressed_bytes": compressed_bytes,
+                    "metadata_bytes": metadata_bytes,
+                    "total_compressed_bytes": total_compressed,
+                    "reduction_pct": reduction_pct,
+                    "record_count": result.record_count,
+                    "reconstructable_count": reconstructable,
+                    "template_count": result.template_count,
+                    "processing_seconds": elapsed,
+                    "events_per_sec": result.events_per_sec,
+                    "method": "template+varsub",
+                    "detail": {"mismatches": result.mismatches},
+                    "ts": comp_model.ts,
+                })
+            except Exception as exc:
+                log.warning("MongoDB compression record note: %s", exc)
 
     log.info("benchmark scope=%s records=%d original=%dB compressed=%dB (%.1f%%) recon=%d/%d",
              scope, result.record_count, original_bytes, total_compressed, reduction_pct,

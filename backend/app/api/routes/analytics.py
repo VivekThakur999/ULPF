@@ -44,6 +44,136 @@ def _group_count(db: Session, column, *conds, limit: int = 15) -> list[dict]:
 
 @router.get("/overview")
 def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    from app.core.config import settings
+
+    total_raw = None
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+            from app.repositories.mongodb.events import MongoEventRepository
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+
+            mongo_ingest = MongoIngestionRepository()
+            mongo_events = MongoEventRepository()
+            mongo_alerts = MongoAlertRepository()
+
+            total_raw = mongo_ingest.count_raw_logs()
+            processed = mongo_ingest.count_raw_logs({"status": RAW_STATUS_PROCESSED})
+            invalid = mongo_ingest.count_raw_logs({"status": RAW_STATUS_INVALID})
+            duplicates = mongo_ingest.count_raw_logs({"status": RAW_STATUS_DUPLICATE})
+            quarantined = mongo_ingest.count_raw_logs({"status": RAW_STATUS_QUARANTINED})
+            events = mongo_events.count()
+            alerts_total = mongo_alerts.count_alerts()
+
+            _, completed_jobs = mongo_ingest.list_jobs(status=JOB_COMPLETED, limit=200)
+            rates = [float(j.get("processing_rate", 0)) for j in completed_jobs if float(j.get("processing_rate", 0)) > 0]
+            avg_rate = round(sum(rates) / len(rates), 1) if rates else 0.0
+            peak_rate = round(max(rates), 1) if rates else 0.0
+
+            pii_protected = mongo_events.count({"pii_protected": True})
+
+            _, alert_items = mongo_alerts.list_alerts(limit=500)
+            bands = {"info": 0, "low": 0, "medium": 0, "high": 0, "critical": 0}
+            for a in alert_items:
+                score = float(a.get("risk_score", 0))
+                b = ("critical" if score >= 85 else "high" if score >= 65 else "medium"
+                     if score >= 40 else "low" if score >= 15 else "info")
+                bands[b] += 1
+
+            success_rate = round(processed / total_raw * 100, 1) if total_raw else 0.0
+            repo = EventRepository(db)
+            timeseries = repo.timeseries(EventQuery(limit=1), bucket="hour")
+
+            configured = db.execute(select(LogSource)).scalars().all()
+            seen_pipeline = [
+                {"$match": {"source": {"$exists": True, "$ne": None}}},
+                {"$group": {"_id": "$source", "events": {"$sum": 1}, "last": {"$max": "$ingested_at"}}},
+            ]
+            seen_map = {}
+            try:
+                for r in mongo_events.collection.aggregate(seen_pipeline):
+                    seen_map[str(r["_id"])] = {"events": r["events"], "last": r.get("last")}
+            except Exception:
+                for f in mongo_events.group_count("source", limit=100):
+                    seen_map[f["label"]] = {"events": f["value"], "last": datetime.now(timezone.utc)}
+
+            source_status = []
+            covered = set()
+            for s in configured:
+                info = seen_map.get(s.name, {})
+                covered.add(s.name)
+                last_val = info.get("last")
+                last_str = (
+                    last_val.isoformat()
+                    if isinstance(last_val, datetime)
+                    else str(last_val)
+                    if last_val
+                    else (s.last_received_at.isoformat() if s.last_received_at else None)
+                )
+                source_status.append({
+                    "name": s.name, "category": s.category, "adapter": s.adapter,
+                    "status": "RECEIVING" if info else s.connection_status,
+                    "events_processed": info.get("events", s.events_processed),
+                    "last_received": last_str,
+                    "configured": True,
+                })
+            for name, info in seen_map.items():
+                if name in covered:
+                    continue
+                last_val = info.get("last")
+                last_str = (
+                    last_val.isoformat()
+                    if isinstance(last_val, datetime)
+                    else str(last_val)
+                    if last_val
+                    else datetime.now(timezone.utc).isoformat()
+                )
+                source_status.append({
+                    "name": name, "category": "uploaded", "adapter": "FILE",
+                    "status": "RECEIVING", "events_processed": info["events"],
+                    "last_received": last_str,
+                    "configured": False,
+                })
+
+            return {
+                "cards": {
+                    "total_logs": total_raw,
+                    "processed": processed,
+                    "invalid": invalid,
+                    "duplicates": duplicates,
+                    "quarantined": quarantined,
+                    "normalized_events": events,
+                    "alerts": alerts_total,
+                    "avg_processing_rate": avg_rate,
+                    "peak_processing_rate": peak_rate,
+                },
+                "charts": {
+                    "logs_by_source": source_facets[:15],
+                    "logs_by_format": _group_count(db, ProcessingJob.detected_format),
+                    "events_by_severity": mongo_events.group_count("severity"),
+                    "events_by_type": mongo_events.group_count("event_type"),
+                    "events_over_time": timeseries,
+                    "processing_outcomes": [
+                        {"label": "processed", "value": processed},
+                        {"label": "invalid", "value": invalid},
+                        {"label": "duplicate", "value": duplicates},
+                        {"label": "quarantined", "value": quarantined},
+                    ],
+                    "pii_transformations": [
+                        {"label": "protected", "value": pii_protected},
+                        {"label": "not protected", "value": max(0, events - pii_protected)},
+                    ],
+                    "alerts_by_severity": mongo_alerts.group_count_alerts("severity"),
+                    "risk_distribution": [{"label": k, "value": v} for k, v in bands.items()],
+                },
+                "processing_success_rate": success_rate,
+                "shield_events": mongo_alerts.count_security_events(),
+                "source_status": source_status,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        except Exception:
+            pass
+
     total_raw = _count(db, RawLog)
     processed = _count(db, RawLog, RawLog.status == RAW_STATUS_PROCESSED)
     invalid = _count(db, RawLog, RawLog.status == RAW_STATUS_INVALID)
@@ -62,7 +192,6 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
 
     pii_protected = _count(db, NormalizedEvent, NormalizedEvent.pii_protected.is_(True))
 
-    # risk distribution by band
     alert_rows = db.execute(select(SecurityAlert.risk_score, SecurityAlert.severity)).all()
     bands = {"info": 0, "low": 0, "medium": 0, "high": 0, "critical": 0}
     for score, _sev in alert_rows:
@@ -75,7 +204,6 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
     repo = EventRepository(db)
     timeseries = repo.timeseries(EventQuery(limit=1), bucket="hour")
 
-    # source status: configured sources + de-facto sources seen in jobs
     configured = db.execute(select(LogSource)).scalars().all()
     seen = db.execute(
         select(NormalizedEvent.source, func.count().label("n"),
@@ -146,11 +274,92 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
 
 @router.get("/pipeline")
 def pipeline_overview(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    """Real per-stage counts for the Dashboard's pipeline story.
+    """Real per-stage counts for the Dashboard's pipeline story."""
+    from app.core.config import settings
 
-    Every number here is a direct DB query against the same tables the rest of
-    the API uses - there is no separate/derived "pipeline state" store.
-    """
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+            from app.repositories.mongodb.events import MongoEventRepository
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+
+            mongo_ingest = MongoIngestionRepository()
+            mongo_events = MongoEventRepository()
+            mongo_alerts = MongoAlertRepository()
+
+            total_raw = mongo_ingest.count_raw_logs()
+            processed = mongo_ingest.count_raw_logs({"status": RAW_STATUS_PROCESSED})
+            invalid = mongo_ingest.count_raw_logs({"status": RAW_STATUS_INVALID})
+            quarantined = mongo_ingest.count_raw_logs({"status": RAW_STATUS_QUARANTINED})
+            duplicates = mongo_ingest.count_raw_logs({"status": RAW_STATUS_DUPLICATE})
+
+            shield_suspicious = mongo_alerts.count_security_events({"verdict": "SUSPICIOUS"})
+            shield_weaponized = mongo_alerts.count_security_events({"verdict": "WEAPONIZED_LOG"})
+            shield_safe = max(0, total_raw - shield_suspicious - shield_weaponized)
+
+            events = mongo_events.count()
+            ok_events = mongo_events.count({"processing_status": "ok"})
+            partial_events = mongo_events.count({"processing_status": "partial"})
+            error_events = mongo_events.count({"processing_status": "error"})
+            pii_protected = mongo_events.count({"pii_protected": True})
+            pii_row = db.get(PiiSetting, "default")
+
+            sources_count = _count(db, LogSource)
+            jobs_running = mongo_ingest.count_jobs({"status": "RUNNING"})
+
+            alerts_total = mongo_alerts.count_alerts()
+            alerts_new = mongo_alerts.count_alerts({"status": "NEW"})
+            _, alert_items = mongo_alerts.list_alerts(limit=500)
+            scores = [float(a.get("risk_score", 0)) for a in alert_items]
+            avg_risk = round(sum(scores) / len(scores), 1) if scores else 0.0
+
+            correlated_alerts = sum(
+                1 for a in alert_items
+                if a.get("related_event_ids") and len(a.get("related_event_ids", [])) > 1
+            )
+
+            parser_breakdown = mongo_events.group_count("parser", limit=6)
+
+            nodes = [
+                {"key": "sources", "label": "Log Sources", "count": sources_count,
+                 "status": "ok" if sources_count or total_raw else "idle",
+                 "detail": {"configured_sources": sources_count}},
+                {"key": "ingestion", "label": "Ingestion", "count": total_raw,
+                 "status": "running" if jobs_running else ("ok" if total_raw else "idle"),
+                 "detail": {"jobs_running": jobs_running, "total_records": total_raw}},
+                {"key": "detection", "label": "Security Shield", "count": total_raw,
+                 "status": "warn" if (shield_suspicious or shield_weaponized) else ("ok" if total_raw else "idle"),
+                 "detail": {"safe": max(0, shield_safe), "suspicious": shield_suspicious,
+                            "weaponized": shield_weaponized}},
+                {"key": "parsing", "label": "Parsing", "count": processed,
+                 "status": "ok" if processed else "idle",
+                 "detail": {"by_parser": parser_breakdown[:6]}},
+                {"key": "cleaning", "label": "Cleaning & Validation", "count": invalid + duplicates,
+                 "status": "warn" if invalid else ("ok" if total_raw else "idle"),
+                 "detail": {"invalid": invalid, "duplicates": duplicates, "quarantined": quarantined}},
+                {"key": "pii", "label": "PII Protection", "count": pii_protected,
+                 "status": "ok" if pii_row and pii_row.mode != "OFF" else "warn",
+                 "detail": {"mode": pii_row.mode if pii_row else "OFF", "protected_events": pii_protected}},
+                {"key": "normalization", "label": "Normalization", "count": events,
+                 "status": "ok" if events else "idle",
+                 "detail": {"schema_version": "1.0"}},
+                {"key": "validation", "label": "Validation", "count": ok_events,
+                 "status": "warn" if error_events else ("ok" if events else "idle"),
+                 "detail": {"ok": ok_events, "partial": partial_events, "error": error_events}},
+                {"key": "correlation", "label": "Correlation", "count": correlated_alerts,
+                 "status": "ok" if correlated_alerts else "idle",
+                 "detail": {"alerts_with_related_events": correlated_alerts}},
+                {"key": "risk", "label": "Risk Scoring", "count": alerts_total,
+                 "status": "warn" if avg_risk >= 65 else ("ok" if alerts_total else "idle"),
+                 "detail": {"avg_risk_score": avg_risk}},
+                {"key": "alert", "label": "Alerts", "count": alerts_new,
+                 "status": "critical" if alerts_new else ("ok" if alerts_total else "idle"),
+                 "detail": {"total": alerts_total, "new": alerts_new}},
+            ]
+            return {"nodes": nodes, "generated_at": datetime.now(timezone.utc).isoformat()}
+        except Exception:
+            pass
+
     total_raw = _count(db, RawLog)
     processed = _count(db, RawLog, RawLog.status == RAW_STATUS_PROCESSED)
     invalid = _count(db, RawLog, RawLog.status == RAW_STATUS_INVALID)
@@ -177,8 +386,6 @@ def pipeline_overview(db: Session = Depends(get_db), _: User = Depends(get_curre
     alerts_new = _count(db, SecurityAlert, SecurityAlert.status == "NEW")
     avg_risk_row = db.execute(select(func.avg(SecurityAlert.risk_score))).scalar()
     avg_risk = round(avg_risk_row, 1) if avg_risk_row else 0.0
-    # "correlated" = an alert whose related_event_ids span more than one event;
-    # counted in Python (portable across SQLite/Postgres JSON representations).
     correlated_alerts = sum(
         1 for (rel,) in db.execute(select(SecurityAlert.related_event_ids)).all()
         if rel and len(rel) > 1

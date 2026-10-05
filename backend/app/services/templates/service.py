@@ -78,12 +78,38 @@ def _load_records(
 
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = db.execute(stmt.limit(limit)).scalars().all()
-    records = [
-        RecordRef(ref_id=r.id, source=r.source_name, ts=r.received_at, raw=r.content)
-        for r in rows
-        if r.content and r.content.strip()
-    ]
-    return records, total > len(rows)
+    if rows:
+        records = [
+            RecordRef(ref_id=r.id, source=r.source_name, ts=r.received_at, raw=r.content)
+            for r in rows
+            if r.content and r.content.strip()
+        ]
+        return records, total > len(rows)
+
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+
+            mongo_ingest = MongoIngestionRepository()
+            total, raw_items = mongo_ingest.list_raw_logs(source_name=source, limit=limit)
+            if raw_items:
+                records = [
+                    RecordRef(
+                        ref_id=r["id"],
+                        source=r.get("source_name", "unknown"),
+                        ts=r.get("received_at"),
+                        raw=r.get("content", ""),
+                    )
+                    for r in raw_items
+                    if r.get("content") and r.get("content").strip()
+                ]
+                return records, total > len(raw_items)
+        except Exception:
+            pass
+
+    return [], False
 
 
 def _upsert_template(db: Session, cluster: MinedCluster) -> tuple[Template, bool]:
@@ -177,6 +203,53 @@ def mine_templates(
             summary.templates_updated += 1
 
     db.commit()
+
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.templates import MongoTemplateRepository
+
+            mongo_templates = MongoTemplateRepository()
+            for cluster in clusters:
+                sig = cluster.token_signature()
+                t_row = db.execute(select(Template).where(Template.token_signature == sig)).scalars().first()
+                if t_row:
+                    mongo_templates.upsert_template({
+                        "id": t_row.id,
+                        "template_key": t_row.template_key,
+                        "pattern": t_row.pattern,
+                        "token_count": t_row.token_count,
+                        "literal_tokens": t_row.literal_tokens,
+                        "variable_types": t_row.variable_types,
+                        "separators": t_row.separators,
+                        "trailing": t_row.trailing,
+                        "token_signature": t_row.token_signature,
+                        "occurrences": t_row.occurrences,
+                        "variable_count": t_row.variable_count,
+                        "source_distribution": t_row.source_distribution,
+                        "examples": t_row.examples,
+                        "example": t_row.example,
+                        "first_seen": t_row.first_seen,
+                        "last_seen": t_row.last_seen,
+                    })
+                    for member in cluster.members:
+                        spans = tokenize(member.raw)
+                        tokens = [s.text for s in spans]
+                        variables = cluster.extract_variables(tokens)
+                        seps, trailing = separators_for(member.raw, spans)
+                        mongo_templates.upsert_match({
+                            "template_id": t_row.id,
+                            "raw_log_id": member.ref_id,
+                            "source": member.source,
+                            "ts": member.ts or datetime.now(timezone.utc),
+                            "variables": variables,
+                            "separators": None if seps == cluster.separators else seps,
+                            "trailing": "" if trailing == cluster.trailing else trailing,
+                        })
+        except Exception as exc:
+            log.warning("MongoDB templates sync note: %s", exc)
+
     summary.templates_total = summary.templates_created + summary.templates_updated
     summary.duration_seconds = time.perf_counter() - start
     log.info("mined %d template(s) from %d record(s) in %.3fs",

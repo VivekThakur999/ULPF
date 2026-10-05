@@ -16,7 +16,9 @@ def hash_password(plain: str) -> str:
     return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
 
 
-def verify_password(plain: str, hashed: str) -> bool:
+def verify_password(plain: str, hashed: str | None) -> bool:
+    if not hashed:
+        return False
     try:
         return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
     except (ValueError, TypeError):
@@ -41,4 +43,24 @@ def create_access_token(subject: str, role: str, extra: dict[str, Any] | None = 
 
 
 def decode_token(token: str) -> dict[str, Any]:
-    return jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
+    # 1. Try decoding with local secret key (Mode B / Local Auth)
+    try:
+        return jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.jwt_algorithm],
+            options={"verify_aud": False},
+        )
+    except jwt.PyJWTError as err:
+        # 2. If Supabase JWT secret is configured (Mode A / Connected Auth), try verifying Supabase JWT
+        if settings.supabase_jwt_secret:
+            try:
+                return jwt.decode(
+                    token,
+                    settings.supabase_jwt_secret,
+                    algorithms=["HS256"],
+                    options={"verify_aud": False},
+                )
+            except jwt.PyJWTError:
+                pass
+        raise err

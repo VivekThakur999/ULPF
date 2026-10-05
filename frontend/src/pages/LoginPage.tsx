@@ -53,7 +53,7 @@ export default function LoginPage() {
             {busy ? "Signing in…" : "Sign in"}
           </button>
           <p className="text-center text-xs text-gray-500">
-            Default demo admin seeded from environment. Change the password after first login.
+            Default demo admin seeded from environment. Change the password after first login. The Password is ChangeMe!123.
           </p>
         </form>
       </div>

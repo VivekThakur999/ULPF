@@ -122,7 +122,9 @@ def _event_to_dict(e: NormalizedEvent) -> dict[str, Any]:
 
 
 def build_event_context(db: Session, event_id: str) -> ExplainContext | None:
-    event = db.get(NormalizedEvent, event_id)
+    from app.repositories.events import EventRepository
+
+    event = EventRepository(db).get(event_id)
     if not event:
         return None
     evidence = _event_evidence(db, event)
@@ -141,36 +143,55 @@ def build_event_context(db: Session, event_id: str) -> ExplainContext | None:
 
 
 def build_alert_context(db: Session, alert_id: str) -> ExplainContext | None:
-    alert = db.get(SecurityAlert, alert_id)
-    if not alert:
-        return None
-    entity = {k: v for k, v in (alert.entity or {}).items()
-              if k in ("source_ip", "username", "host")}
-    center = None
-    if (alert.entity or {}).get("incident_center"):
+    from app.core.config import settings
+
+    alert_dict = None
+    if settings.use_mongodb:
         try:
-            center = datetime.fromisoformat(alert.entity["incident_center"])
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+
+            alert_dict = MongoAlertRepository().get_alert(alert_id)
+        except Exception:
+            pass
+
+    if alert_dict is None:
+        alert = db.get(SecurityAlert, alert_id)
+        if not alert:
+            return None
+        alert_dict = {
+            "id": alert.id, "title": alert.title, "severity": alert.severity,
+            "risk_score": alert.risk_score, "rule_key": alert.rule_key,
+            "description": alert.description, "reason": alert.reason,
+            "risk_breakdown": alert.risk_breakdown, "entity": alert.entity,
+            "related_event_ids": alert.related_event_ids, "affected_hosts": alert.affected_hosts,
+            "recommended_response": alert.recommended_response, "status": alert.status,
+            "ts": alert.ts.isoformat() if alert.ts else None,
+        }
+    else:
+        ts_val = alert_dict.get("ts")
+        alert_dict["ts"] = ts_val.isoformat() if isinstance(ts_val, datetime) else str(ts_val) if ts_val else None
+
+    entity_map = alert_dict.get("entity") or {}
+    entity = {k: v for k, v in entity_map.items() if k in ("source_ip", "username", "host")}
+    center = None
+    if entity_map.get("incident_center"):
+        try:
+            center = datetime.fromisoformat(entity_map["incident_center"])
         except (TypeError, ValueError):
             center = None
     corr = {}
     if entity:
         corr = correlate(db, center_time=center, window_seconds=3600, **entity).to_dict()
 
-    related = db.execute(
-        select(NormalizedEvent)
-        .where(NormalizedEvent.id.in_((alert.related_event_ids or [])[:20]))
-        .order_by(NormalizedEvent.timestamp)
-    ).scalars().all()
+    from app.repositories.events import EventQuery, EventRepository
 
-    alert_dict = {
-        "id": alert.id, "title": alert.title, "severity": alert.severity,
-        "risk_score": alert.risk_score, "rule_key": alert.rule_key,
-        "description": alert.description, "reason": alert.reason,
-        "risk_breakdown": alert.risk_breakdown, "entity": alert.entity,
-        "related_event_ids": alert.related_event_ids, "affected_hosts": alert.affected_hosts,
-        "recommended_response": alert.recommended_response, "status": alert.status,
-        "ts": alert.ts.isoformat() if alert.ts else None,
-    }
+    rel_ids = (alert_dict.get("related_event_ids") or [])[:50]
+    related = (
+        EventRepository(db).search(EventQuery(fields_in={"id": rel_ids}, limit=len(rel_ids))).items
+        if rel_ids
+        else []
+    )
+
     return ExplainContext(
         kind="alert", evidence={"alert": alert_dict, "correlation": corr},
         alert=alert_dict, correlation=corr,

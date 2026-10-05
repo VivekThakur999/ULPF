@@ -60,8 +60,18 @@ _TEXT_COLUMNS = (
 
 
 class EventRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session | None = None):
         self.db = db
+        self._mongo = None
+        from app.core.config import settings
+
+        if settings.use_mongodb:
+            try:
+                from app.repositories.mongodb.events import MongoEventRepository
+
+                self._mongo = MongoEventRepository()
+            except Exception:
+                self._mongo = None
 
     def _apply(self, stmt, q: EventQuery):
         E = NormalizedEvent
@@ -94,20 +104,37 @@ class EventRepository:
         return stmt
 
     def search(self, q: EventQuery) -> EventPage:
+        if self._mongo is not None:
+            try:
+                return self._mongo.search(q)
+            except Exception:
+                pass  # Fall back to SQL
         E = NormalizedEvent
         base = self._apply(select(E), q)
         total = self.db.scalar(select(func.count()).select_from(base.subquery())) or 0
         order_col = E.timestamp.desc() if q.order == "desc" else E.timestamp.asc()
         rows = self.db.execute(
             base.order_by(order_col, E.ingested_at.desc())
-            .offset(max(0, q.offset)).limit(min(max(1, q.limit), 500))
+            .offset(max(0, q.offset)).limit(min(max(1, q.limit), 10000))
         ).scalars().all()
         return EventPage(total=total, items=list(rows))
 
     def get(self, event_id: str) -> NormalizedEvent | None:
+        if self._mongo is not None:
+            try:
+                res = self._mongo.get(event_id)
+                if res is not None:
+                    return res
+            except Exception:
+                pass
         return self.db.get(NormalizedEvent, event_id)
 
     def facets(self, q: EventQuery, fields: Sequence[str]) -> dict[str, list[dict]]:
+        if self._mongo is not None:
+            try:
+                return self._mongo.facets(q, fields)
+            except Exception:
+                pass
         E = NormalizedEvent
         out: dict[str, list[dict]] = {}
         for fname in fields:
@@ -123,8 +150,13 @@ class EventRepository:
 
     def timeseries(self, q: EventQuery, *, bucket: str = "hour") -> list[dict]:
         """Coarse event-count time series (dialect-aware bucketing)."""
+        if self._mongo is not None:
+            try:
+                return self._mongo.timeseries(q, bucket=bucket)
+            except Exception:
+                pass
         E = NormalizedEvent
-        dialect = self.db.bind.dialect.name if self.db.bind else "sqlite"
+        dialect = self.db.bind.dialect.name if self.db and self.db.bind else "sqlite"
         if dialect == "sqlite":
             fmt = {"minute": "%Y-%m-%dT%H:%M", "hour": "%Y-%m-%dT%H:00:00",
                    "day": "%Y-%m-%d"}.get(bucket, "%Y-%m-%dT%H:00:00")
@@ -139,6 +171,11 @@ class EventRepository:
         return [{"bucket": str(r[0]), "count": r[1]} for r in rows]
 
     def distinct_values(self, field_name: str, q: EventQuery | None = None) -> list[str]:
+        if self._mongo is not None:
+            try:
+                return self._mongo.distinct_values(field_name, q)
+            except Exception:
+                pass
         E = NormalizedEvent
         col = getattr(E, field_name, None)
         if col is None:

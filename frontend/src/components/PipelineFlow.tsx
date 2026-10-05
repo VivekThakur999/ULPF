@@ -128,7 +128,7 @@ export default function PipelineFlow() {
   const flowing = nodes.some((n) => n.status === "running");
 
   return (
-    <div className="surface bg-surface-sheen p-6">
+    <div className="surface bg-surface-sheen p-5">
       <SectionHeader
         title="ULPF Processing Pipeline"
         hint="Log Sources → Ingestion → Security Shield → Parsing → Cleaning → PII → Normalization → Validation → Correlation → Risk → Alert"

@@ -118,6 +118,34 @@ def run_simulation(db: Session, alert: SecurityAlert, actor: User) -> ResponseSi
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.response import MongoResponseRepository
+
+            mongo_resp = MongoResponseRepository()
+            mongo_resp.save_simulation({
+                "id": row.id,
+                "actor_id": row.actor_id,
+                "actor_email": row.actor_email,
+                "alert_id": row.alert_id,
+                "alert_title": row.alert_title,
+                "alert_rule_key": row.alert_rule_key,
+                "alert_severity": row.alert_severity,
+                "alert_risk_score": row.alert_risk_score,
+                "recommendation": row.recommendation,
+                "actions": row.actions,
+                "result": row.result,
+                "evidence": row.evidence,
+                "notes": row.notes,
+                "simulation_only": True,
+                "ts": row.ts,
+            })
+        except Exception as exc:
+            log.warning("MongoDB response simulation sync note: %s", exc)
+
     log.info("response simulation %s for alert %s by %s (%s) - SIMULATION ONLY",
              row.id, alert.id, actor.email, rec.category)
     return row

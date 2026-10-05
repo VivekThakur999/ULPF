@@ -24,11 +24,12 @@ class Role(Base):
 
 
 class User(Base, UUIDPk, Timestamps):
-    __tablename__ = "users"
+    __tablename__ = "app_users"
 
+    supabase_user_id: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String(255), default="")
-    password_hash: Mapped[str] = mapped_column(String(255))
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role_name: Mapped[str] = mapped_column(ForeignKey("roles.name"), default=ROLE_VIEWER)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

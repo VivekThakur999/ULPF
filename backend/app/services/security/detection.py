@@ -182,6 +182,39 @@ def run_detection(
     db.commit()
     for a in alerts:
         db.refresh(a)
+
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+
+            mongo_alerts = MongoAlertRepository()
+            for a in alerts:
+                mongo_alerts.upsert_alert({
+                    "id": a.id,
+                    "dedup_key": a.dedup_key,
+                    "title": a.title,
+                    "severity": a.severity,
+                    "risk_score": a.risk_score,
+                    "source": a.source,
+                    "rule_key": a.rule_key,
+                    "description": a.description,
+                    "reason": a.reason,
+                    "risk_breakdown": a.risk_breakdown,
+                    "entity": a.entity,
+                    "related_event_ids": a.related_event_ids,
+                    "affected_hosts": a.affected_hosts,
+                    "recommended_response": a.recommended_response,
+                    "status": a.status,
+                    "acknowledged_by": a.acknowledged_by,
+                    "resolution_note": a.resolution_note,
+                    "ts": a.ts,
+                    "updated_at": a.updated_at,
+                })
+        except Exception as exc:
+            log.warning("MongoDB alert upsert note: %s", exc)
+
     log.info("detection produced %d alert(s) from %d hit(s)", len(alerts), len(hits))
     return alerts
 

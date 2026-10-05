@@ -28,6 +28,18 @@ def list_alerts(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+
+            mongo_alerts = MongoAlertRepository()
+            total, items = mongo_alerts.list_alerts(status=status, severity=severity, limit=limit, offset=offset)
+            return AlertListResponse(total=total, items=[AlertOut.model_validate(r) for r in items])
+        except Exception:
+            pass
+
     q = db.query(SecurityAlert)
     if status:
         q = q.filter(SecurityAlert.status == status.upper())
@@ -40,29 +52,56 @@ def list_alerts(
 
 @router.get("/{alert_id}", response_model=AlertDetailResponse)
 def alert_detail(alert_id: str, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    alert = db.get(SecurityAlert, alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
+    from app.core.config import settings
+    from app.repositories.events import EventQuery, EventRepository
 
-    entity = {k: v for k, v in alert.entity.items() if k in ("source_ip", "username", "host")}
-    center = None
-    if alert.entity.get("incident_center"):
+    alert_obj = None
+    if settings.use_mongodb:
         try:
-            center = datetime.fromisoformat(alert.entity["incident_center"])
-        except (TypeError, ValueError):
-            center = None
-    window = int(alert.entity.get("window_seconds") or 900) * 3
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+
+            alert_obj = MongoAlertRepository().get_alert(alert_id)
+        except Exception:
+            pass
+
+    if alert_obj is None:
+        alert_obj = db.get(SecurityAlert, alert_id)
+        if not alert_obj:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        alert_out = AlertOut.model_validate(alert_obj)
+        entity = {k: v for k, v in (alert_obj.entity or {}).items() if k in ("source_ip", "username", "host")}
+        center = None
+        if alert_obj.entity and alert_obj.entity.get("incident_center"):
+            try:
+                center = datetime.fromisoformat(alert_obj.entity["incident_center"])
+            except (TypeError, ValueError):
+                center = None
+        window = int((alert_obj.entity or {}).get("window_seconds") or 900) * 3
+        rel_ids = (alert_obj.related_event_ids or [])[:200]
+    else:
+        alert_out = AlertOut.model_validate(alert_obj)
+        entity_dict = alert_obj.get("entity") or {}
+        entity = {k: v for k, v in entity_dict.items() if k in ("source_ip", "username", "host")}
+        center = None
+        if entity_dict.get("incident_center"):
+            try:
+                center = datetime.fromisoformat(entity_dict["incident_center"])
+            except (TypeError, ValueError):
+                center = None
+        window = int(entity_dict.get("window_seconds") or 900) * 3
+        rel_ids = (alert_obj.get("related_event_ids") or [])[:200]
 
     corr = {}
     if entity:
         corr = correlate(db, center_time=center, window_seconds=window, **entity).to_dict()
 
-    related = db.query(NormalizedEvent).filter(
-        NormalizedEvent.id.in_(alert.related_event_ids[:200])
-    ).order_by(NormalizedEvent.timestamp.asc()).all()
+    event_repo = EventRepository(db)
+    if rel_ids:
+        rel_page = event_repo.search(EventQuery(fields_in={"id": rel_ids}, limit=len(rel_ids), order="asc"))
+        related = rel_page.items
+    else:
+        related = []
 
-    # Build the incident timeline directly from the correlated event set so it is
-    # always consistent with related_events (independent of wall-clock skew).
     timeline = corr.get("timeline") or [
         {
             "ts": e.timestamp.isoformat() if e.timestamp else None,
@@ -75,7 +114,7 @@ def alert_detail(alert_id: str, db: Session = Depends(get_db), _: User = Depends
     ]
 
     return AlertDetailResponse(
-        alert=AlertOut.model_validate(alert),
+        alert=alert_out,
         timeline=timeline,
         related_events=[EventOut.model_validate(e) for e in related],
         correlation=corr,
@@ -118,6 +157,23 @@ def update_alert(
     alert.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(alert)
+
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+
+            mongo_alerts = MongoAlertRepository()
+            mongo_alerts.update_alert(alert.id, {
+                "status": alert.status,
+                "acknowledged_by": alert.acknowledged_by,
+                "resolution_note": alert.resolution_note,
+                "updated_at": alert.updated_at,
+            })
+        except Exception as exc:
+            pass
+
     audit.record(db, action="alert.update", actor=analyst, target_type="alert",
                  target_id=alert.id, detail=f"status={alert.status}",
                  ip_address=request.client.host if request.client else None)

@@ -53,6 +53,27 @@ def list_templates(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.templates import MongoTemplateRepository
+
+            mongo_tpl = MongoTemplateRepository()
+            total, items, covered_events, unique_sources, avg_vars = mongo_tpl.list_templates(
+                source=source, min_frequency=min_frequency, time_from=time_from, time_to=time_to,
+                limit=limit, offset=offset
+            )
+            return TemplateListOut(
+                total=total,
+                items=[TemplateOut.model_validate(r) for r in items],
+                covered_events=covered_events,
+                unique_sources=unique_sources,
+                avg_variables=avg_vars,
+            )
+        except Exception:
+            pass
+
     stmt = select(Template).where(Template.occurrences >= min_frequency)
     if time_from:
         stmt = stmt.where(Template.last_seen >= time_from)
@@ -60,8 +81,6 @@ def list_templates(
         stmt = stmt.where(Template.first_seen <= time_to)
 
     rows = db.execute(stmt.order_by(desc(Template.occurrences))).scalars().all()
-    # source_distribution is a JSON map; filtering in Python keeps this
-    # portable across SQLite and PostgreSQL without dialect-specific JSON ops.
     if source:
         rows = [r for r in rows if source in (r.source_distribution or {})]
 
@@ -84,6 +103,19 @@ def list_templates(
 
 @router.get("/{template_id}", response_model=TemplateDetailOut)
 def get_template(template_id: str, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.templates import MongoTemplateRepository
+
+            mongo_tpl = MongoTemplateRepository()
+            doc = mongo_tpl.get_template(template_id)
+            if doc:
+                return TemplateDetailOut.model_validate(doc)
+        except Exception:
+            pass
+
     row = db.get(Template, template_id) or _by_key(db, template_id)
     if not row:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -98,6 +130,59 @@ def template_examples(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+            from app.repositories.mongodb.templates import MongoTemplateRepository
+
+            mongo_tpl = MongoTemplateRepository()
+            mongo_ingest = MongoIngestionRepository()
+
+            tpl_doc = mongo_tpl.get_template(template_id)
+            if not tpl_doc:
+                row = db.get(Template, template_id) or _by_key(db, template_id)
+                if not row:
+                    raise HTTPException(status_code=404, detail="Template not found")
+                target_id = row.id
+            else:
+                target_id = tpl_doc["id"]
+
+            matches = mongo_tpl.list_matches_for_template(target_id, limit=limit, offset=offset)
+            if not matches:
+                # Also try matching by template_key or sql id
+                row_t = db.get(Template, template_id) or _by_key(db, template_id)
+                if row_t and row_t.id != target_id:
+                    matches = mongo_tpl.list_matches_for_template(row_t.id, limit=limit, offset=offset)
+
+            if matches:
+                raw_ids = [m["raw_log_id"] for m in matches if m.get("raw_log_id")]
+                raws_map = mongo_ingest.get_raw_logs_by_ids(raw_ids)
+
+                out = []
+                for m in matches:
+                    raw_item = raws_map.get(m.get("raw_log_id"))
+                    raw_content = raw_item.get("content", "") if raw_item else ""
+                    if not raw_content:
+                        sql_raw = db.get(RawLog, m.get("raw_log_id"))
+                        if sql_raw:
+                            raw_content = sql_raw.content
+                    ts_val = m.get("ts")
+                    out.append(TemplateExampleOut(
+                        raw_log_id=m.get("raw_log_id", ""),
+                        source=m.get("source", "unknown"),
+                        ts=ts_val.isoformat() if isinstance(ts_val, datetime) else str(ts_val) if ts_val else None,
+                        raw=raw_content,
+                        variables=m.get("variables", []),
+                    ))
+                if out:
+                    return out
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
     row = db.get(Template, template_id) or _by_key(db, template_id)
     if not row:
         raise HTTPException(status_code=404, detail="Template not found")

@@ -59,18 +59,25 @@ describe("LogExplorerPage", () => {
     expect(screen.getByText("IP_ABC")).toBeInTheDocument();
   });
 
-  it("opens the event investigation drawer on row click", async () => {
+  it("opens the mobile/tablet investigation drawer on row click", async () => {
     renderWithProviders(<LogExplorerPage />);
     fireEvent.click(await screen.findByText("authentication_failure"));
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    expect(await screen.findByText("auth failure")).toBeInTheDocument();
-    expect(screen.getByText("authentication_failure · linux")).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("auth failure")).toBeInTheDocument();
+    expect(within(dialog).getByText("authentication_failure · linux")).toBeInTheDocument();
+  });
+
+  it("updates the persistent desktop investigation panel on row click", async () => {
+    renderWithProviders(<LogExplorerPage />);
+    fireEvent.click(await screen.findByText("authentication_failure"));
+    const panel = (await screen.findAllByText("authentication_failure · linux"))[0].closest(".surface")!;
+    expect(await within(panel as HTMLElement).findByText("auth failure")).toBeInTheDocument();
   });
 
   it("shows active filter chips and clears them", async () => {
     renderWithProviders(<LogExplorerPage />);
     fireEvent.change(screen.getByPlaceholderText(/search message, raw log, host/), { target: { value: "admin" } });
-    fireEvent.click(screen.getByRole("button", { name: /Search/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Run Query/ }));
     await waitFor(() => expect(screen.getByText("clear all")).toBeInTheDocument());
   });
 

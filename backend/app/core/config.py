@@ -46,10 +46,27 @@ class Settings(BaseSettings):
     debug: bool = Field(default=True)
     api_prefix: str = "/api"
 
-    # --- Database ---
+    # --- Database (Control Plane) ---
     # SQLite default keeps the prototype runnable with zero infrastructure.
-    # docker-compose overrides this with a PostgreSQL URL.
+    # docker-compose overrides this with a PostgreSQL / Supabase URL.
     database_url: str = Field(default="sqlite:///./ulpf.db")
+
+    # --- Telemetry & Event Storage (MongoDB Community Server 8.0) ---
+    mongodb_uri: str = Field(default="mongodb://localhost:27017/ulpf_telemetry")
+    mongodb_db_name: str = Field(default="ulpf_telemetry")
+    mongodb_max_pool_size: int = Field(default=100)
+    mongodb_min_pool_size: int = Field(default=5)
+    mongodb_timeout_ms: int = Field(default=2000)
+    use_mongodb: bool = Field(default=True)
+    mongodb_allow_mock: bool = Field(default=True)
+    mongodb_require_live: bool = Field(default=False)
+
+    # --- Supabase Control Plane & Auth (Connected Mode) ---
+    supabase_url: str | None = Field(default=None)
+    supabase_anon_key: str | None = Field(default=None)
+    supabase_service_role_key: str | None = Field(default=None)
+    supabase_jwt_secret: str | None = Field(default=None)
+    auth_mode: str = Field(default="auto")  # auto | supabase | local
 
     # --- Auth / security ---
     secret_key: str = Field(default="dev-only-insecure-change-me")
@@ -57,7 +74,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 12
 
     # --- CORS ---
-    cors_origins: List[str] = Field(default=["http://localhost:5173", "http://localhost:3000"])
+    cors_origins: Any = Field(default=["http://localhost:5173", "http://localhost:3000"])
 
     # --- Privacy / PII ---
     # HMAC key for deterministic pseudonymization. MUST be overridden in production.
@@ -71,7 +88,7 @@ class Settings(BaseSettings):
 
     # --- Ingestion limits ---
     max_upload_bytes: int = 50 * 1024 * 1024  # 50 MB
-    allowed_upload_extensions: List[str] = Field(
+    allowed_upload_extensions: Any = Field(
         default=[".log", ".txt", ".json", ".jsonl", ".ndjson", ".csv", ".syslog"]
     )
 
@@ -91,7 +108,14 @@ class Settings(BaseSettings):
     @classmethod
     def _split_csv(cls, v):
         if isinstance(v, str):
-            return [item.strip() for item in v.split(",") if item.strip()]
+            v_str = v.strip()
+            if v_str.startswith("[") and v_str.endswith("]"):
+                import json
+                try:
+                    return json.loads(v_str)
+                except Exception:
+                    pass
+            return [item.strip() for item in v_str.split(",") if item.strip()]
         return v
 
     @property

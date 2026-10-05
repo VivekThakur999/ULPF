@@ -34,6 +34,15 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         log.warning("Bootstrap skipped/failed: %s", exc)
 
+    # Initialize MongoDB collections & indexes (telemetry store)
+    try:
+        from app.core.mongodb import get_mongo_db, init_mongo_indexes
+
+        init_mongo_indexes(get_mongo_db())
+        log.info("MongoDB telemetry store initialized")
+    except Exception as exc:  # pragma: no cover
+        log.warning("MongoDB initialization skipped/failed: %s", exc)
+
     # Register declarative parser packs (disk + DB).
     try:
         from app.services.parsing.loader import load_all_parsers
@@ -43,6 +52,15 @@ async def lifespan(app: FastAPI):
         log.warning("Parser pack loading failed: %s", exc)
 
     yield
+
+    # Graceful shutdown: close MongoDB connections
+    try:
+        from app.core.mongodb import close_mongo_client
+
+        close_mongo_client()
+        log.info("MongoDB client closed")
+    except Exception as exc:  # pragma: no cover
+        log.warning("MongoDB client close error: %s", exc)
 
 
 app = FastAPI(
@@ -70,11 +88,19 @@ def health():
             conn.execute(text("SELECT 1"))
     except Exception:
         db_ok = False
+
+    from app.core.mongodb import check_mongo_health
+
+    mongo_info = check_mongo_health()
+
     return {
-        "status": "ok" if db_ok else "degraded",
+        "status": "ok" if db_ok and mongo_info.get("status") == "connected" else "degraded",
         "version": __version__,
         "environment": settings.environment,
         "database": "connected" if db_ok else "unavailable",
+        "control_database": "connected" if db_ok else "unavailable",
+        "telemetry_store": mongo_info,
+        "mode": "air-gapped" if not settings.supabase_url else "connected",
     }
 
 

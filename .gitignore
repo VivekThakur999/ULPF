@@ -35,3 +35,6 @@ htmlcov/
 backend/uploads/
 backend/data/
 *.tsbuildinfo
+
+.vercel
+.env*

@@ -21,7 +21,7 @@ class ResponseSimulation(Base, UUIDPk):
     actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     actor_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    alert_id: Mapped[str] = mapped_column(ForeignKey("security_alerts.id"), index=True)
+    alert_id: Mapped[str] = mapped_column(String(64), index=True)
     alert_title: Mapped[str] = mapped_column(String(200), default="")
     alert_rule_key: Mapped[str | None] = mapped_column(String(48), nullable=True)
     alert_severity: Mapped[str] = mapped_column(String(16), default="")

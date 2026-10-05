@@ -168,6 +168,16 @@ def list_jobs(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+
+            mongo_ingest = MongoIngestionRepository()
+            total, items = mongo_ingest.list_jobs(limit=limit, offset=offset)
+            return JobListOut(total=total, items=[JobOut.model_validate(r) for r in items])
+        except Exception:
+            pass
+
     q = db.query(ProcessingJob)
     total = q.count()
     rows = q.order_by(desc(ProcessingJob.created_at)).offset(offset).limit(min(limit, 200)).all()
@@ -176,6 +186,17 @@ def list_jobs(
 
 @router.get("/jobs/{job_id}", response_model=JobOut)
 def get_job(job_id: str, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+
+            mongo_ingest = MongoIngestionRepository()
+            doc = mongo_ingest.get_job(job_id)
+            if doc:
+                return JobOut.model_validate(doc)
+        except Exception:
+            pass
+
     job = db.get(ProcessingJob, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -191,6 +212,22 @@ def job_records(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.ingestion import MongoIngestionRepository
+
+            mongo_ingest = MongoIngestionRepository()
+            if not mongo_ingest.get_job(job_id) and not db.get(ProcessingJob, job_id):
+                raise HTTPException(status_code=404, detail="Job not found")
+            _, raw_items = mongo_ingest.list_raw_logs(
+                job_id=job_id, status=status.upper() if status else None, limit=limit, offset=offset
+            )
+            return [RawLogOut.model_validate(r) for r in raw_items]
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
     if not db.get(ProcessingJob, job_id):
         raise HTTPException(status_code=404, detail="Job not found")
     q = db.query(RawLog).filter(RawLog.job_id == job_id)

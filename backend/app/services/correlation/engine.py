@@ -107,18 +107,28 @@ def correlate(
     if not filters:
         raise ValueError("correlate() needs at least one focus entity")
 
-    stmt = select(E).where(or_(*filters))
+    from app.repositories.events import EventQuery, EventRepository
+
     if center_time:
         lo = center_time - timedelta(seconds=window_seconds)
         hi = center_time + timedelta(seconds=window_seconds)
-        stmt = stmt.where(or_(E.timestamp.is_(None), E.timestamp.between(lo, hi)))
         window = {"start": lo.isoformat(), "end": hi.isoformat(), "seconds": window_seconds}
     else:
+        lo = hi = None
         window = {"start": None, "end": None, "seconds": window_seconds}
 
-    rows = db.execute(stmt.order_by(E.timestamp.asc().nulls_last()
-                                    if db.bind and db.bind.dialect.name != "sqlite"
-                                    else E.timestamp.asc()).limit(max_events)).scalars().all()
+    eq = EventQuery(
+        any_ip=source_ip,
+        username=username,
+        host=host,
+        time_from=lo,
+        time_to=hi,
+        limit=max_events,
+        order="asc",
+    )
+    repo = EventRepository(db)
+    page = repo.search(eq)
+    rows = page.items
 
     timeline = [
         TimelineEntry(

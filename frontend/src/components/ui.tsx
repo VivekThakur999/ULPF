@@ -285,6 +285,24 @@ export function statusTone(s: string): keyof typeof BADGE_TONES {
 
 /* ------------------------------------------------------------------ metrics */
 
+/** Tiny inline trend line — only ever fed real bucketed counts, never synthesized. */
+export function Sparkline({ points, tone: t = "#dc2626" }: { points: number[]; tone?: string }) {
+  if (points.length < 2) return null;
+  const max = Math.max(...points, 1);
+  const min = Math.min(...points, 0);
+  const range = max - min || 1;
+  const step = 100 / (points.length - 1);
+  const coords = points.map((v, i) => `${i * step},${24 - ((v - min) / range) * 22 - 1}`);
+  const line = coords.join(" ");
+  const area = `0,24 ${line} 100,24`;
+  return (
+    <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="h-6 w-full overflow-visible">
+      <polyline points={area} fill={t} opacity={0.08} />
+      <polyline points={line} fill="none" stroke={t} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 export function Kpi({
   label,
   value,
@@ -293,6 +311,7 @@ export function Kpi({
   tone,
   icon: Icon,
   loading,
+  spark,
 }: {
   label: string;
   value: ReactNode;
@@ -303,12 +322,15 @@ export function Kpi({
   tone?: AccentTone;
   icon?: typeof Inbox;
   loading?: boolean;
+  /** Optional real trend (e.g. last N hourly buckets) — never fabricate these values. */
+  spark?: number[];
 }) {
   const bar = tone ? TONE[tone].bar : status ? undefined : "bg-slate-200";
   const iconClass = tone ? TONE[tone].icon : status ? undefined : "text-slate-400";
   const dot = !tone && status ? statusStyle(status).dot : undefined;
+  const sparkColor = tone ? TONE[tone].dot : dot ?? "#94a3b8";
   return (
-    <div className="surface bg-surface-sheen relative overflow-hidden p-4 transition-shadow hover:shadow-md">
+    <div className="surface bg-surface-sheen relative overflow-hidden p-3.5 transition-shadow hover:shadow-hover">
       <span
         className={clsx("absolute inset-x-0 top-0 h-1", bar)}
         style={dot ? { background: dot } : undefined}
@@ -316,20 +338,25 @@ export function Kpi({
       />
       <div className="flex items-center justify-between">
         <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
-        {Icon && <Icon className={clsx("h-4 w-4", iconClass ?? "text-slate-400")} style={dot ? { color: dot } : undefined} />}
+        {Icon && <Icon className={clsx("h-3.5 w-3.5", iconClass ?? "text-slate-400")} style={dot ? { color: dot } : undefined} />}
       </div>
       {loading ? (
-        <Skeleton className="mt-2 h-8 w-20" />
+        <Skeleton className="mt-2 h-7 w-20" />
       ) : (
-        <div className="mt-2 text-[1.75rem] font-bold leading-none tracking-tight text-slate-900 tnum">{value}</div>
+        <div className="mt-1.5 text-2xl font-bold leading-none tracking-tight text-slate-900 tnum">{value}</div>
       )}
-      {sub && <div className="mt-1.5 text-xs text-slate-500">{sub}</div>}
+      {sub && <div className="mt-1 text-2xs text-slate-500">{sub}</div>}
+      {!loading && spark && spark.length > 1 && (
+        <div className="mt-1.5">
+          <Sparkline points={spark} tone={sparkColor} />
+        </div>
+      )}
     </div>
   );
 }
 
 export function KpiGrid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">{children}</div>;
+  return <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{children}</div>;
 }
 
 /* ------------------------------------------------------------------ drawer */

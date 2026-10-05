@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Search, SearchCheck } from "lucide-react";
 import { logStats, searchLogs, type LogFilters } from "@/services/endpoints";
-import EventDetail from "@/components/EventDetail";
+import EventDetail, { EventInspectorContent, EventInspectorHeader } from "@/components/EventDetail";
 import {
   DataTable,
   EmptyState,
@@ -33,10 +34,16 @@ const TEXT_FIELDS: { key: keyof LogFilters; label: string; placeholder: string }
 const PAGE = 50;
 
 export default function LogExplorerPage() {
+  const [params, setParams] = useSearchParams();
   const [draft, setDraft] = useState<LogFilters>({});
   const [applied, setApplied] = useState<LogFilters>({});
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(params.get("event"));
+
+  const select = (id: string | null) => {
+    setSelected(id);
+    setParams(id ? { event: id } : {}, { replace: true });
+  };
 
   const stats = useQuery({ queryKey: ["log-stats"], queryFn: logStats, refetchInterval: 30000 });
   const q = useQuery({
@@ -94,7 +101,7 @@ export default function LogExplorerPage() {
           </div>
           <div className="flex items-center gap-2">
             <button className="btn-primary" onClick={apply}>
-              Search
+              <SearchCheck className="h-4 w-4" /> Run Query
             </button>
             <button className="btn-ghost" onClick={clearAll}>
               Clear
@@ -145,7 +152,7 @@ export default function LogExplorerPage() {
         </div>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <FilterChips filters={applied as Record<string, unknown>} onRemove={removeFilter} onClear={clearAll} />
         {q.data && (
           <span className="text-xs text-gray-500">
@@ -156,86 +163,126 @@ export default function LogExplorerPage() {
 
       {q.data?.note && <p className="mb-2 text-xs text-brand-fg">ℹ {q.data.note}</p>}
 
-      {q.isLoading ? (
-        <SkeletonTable rows={10} cols={7} />
-      ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={q.refetch} />
-      ) : q.data && q.data.items.length > 0 ? (
-        <>
-          <DataTable>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Host / Source</th>
-                <th>Event signature</th>
-                <th className="hidden lg:table-cell">Identity</th>
-                <th>Source IP</th>
-                <th className="hidden lg:table-cell">Destination IP</th>
-                <th>Severity</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.data.items.map((e) => (
-                <tr key={e.id} className="clickable" onClick={() => setSelected(e.id)}>
-                  <td className="whitespace-nowrap font-mono text-2xs text-slate-500" title={e.timestamp ?? ""}>
-                    {relTime(e.timestamp)}
-                  </td>
-                  <td>
-                    <div className="text-xs font-semibold text-slate-800">{e.host ?? "—"}</div>
-                    <div className="text-2xs text-slate-500">{e.source}</div>
-                  </td>
-                  <td>
-                    <div className="text-xs text-slate-800">{e.event_type ?? "—"}</div>
-                    {(e.action || e.status) && (
-                      <div className="text-2xs text-slate-500">
-                        {[e.action, e.status].filter(Boolean).join(" · ")}
-                      </div>
-                    )}
-                  </td>
-                  <td className="hidden font-mono text-2xs text-slate-500 lg:table-cell">
-                    {e.username ?? e.email ?? "—"}
-                  </td>
-                  <td className="font-mono text-2xs text-slate-500">{e.source_ip ?? "—"}</td>
-                  <td className="hidden font-mono text-2xs text-slate-500 lg:table-cell">
-                    {e.destination_ip ?? "—"}
-                  </td>
-                  <td>{e.severity ? <StatusPill status={e.severity} /> : "—"}</td>
-                  <td>{e.processing_status ? <StatusPill status={e.processing_status} dot={false} /> : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
-          <div className="mt-3 flex items-center justify-between text-xs">
-            <span className="text-gray-500">
-              Showing {page * PAGE + 1}–{Math.min(total, (page + 1) * PAGE)} of {total.toLocaleString()}
-            </span>
-            <div className="flex gap-2">
-              <button className="btn-ghost py-1" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-                Previous
-              </button>
-              <button
-                className="btn-ghost py-1"
-                disabled={(page + 1) * PAGE >= total}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </button>
+      {/* Persistent 58/42 investigation split on desktop; table-only + slide-over below lg */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
+        <div className="lg:col-span-7">
+          {q.isLoading ? (
+            <SkeletonTable rows={10} cols={7} />
+          ) : q.isError ? (
+            <ErrorState error={q.error} onRetry={q.refetch} />
+          ) : q.data && q.data.items.length > 0 ? (
+            <>
+              <DataTable>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Host / Source</th>
+                    <th>Event signature</th>
+                    <th className="hidden xl:table-cell">Identity</th>
+                    <th>Source IP</th>
+                    <th className="hidden xl:table-cell">Destination IP</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {q.data.items.map((e) => (
+                    <tr
+                      key={e.id}
+                      className="clickable"
+                      aria-selected={selected === e.id}
+                      onClick={() => select(e.id)}
+                    >
+                      <td className="whitespace-nowrap font-mono text-2xs text-slate-500" title={e.timestamp ?? ""}>
+                        {relTime(e.timestamp)}
+                      </td>
+                      <td>
+                        <div className="text-xs font-semibold text-slate-800">{e.host ?? "—"}</div>
+                        <div className="text-2xs text-slate-500">{e.source}</div>
+                      </td>
+                      <td>
+                        <div className="text-xs text-slate-800">{e.event_type ?? "—"}</div>
+                        {(e.action || e.status) && (
+                          <div className="text-2xs text-slate-500">
+                            {[e.action, e.status].filter(Boolean).join(" · ")}
+                          </div>
+                        )}
+                      </td>
+                      <td className="hidden font-mono text-2xs text-slate-500 xl:table-cell">
+                        {e.username ?? e.email ?? "—"}
+                      </td>
+                      <td className="font-mono text-2xs text-slate-500">{e.source_ip ?? "—"}</td>
+                      <td className="hidden font-mono text-2xs text-slate-500 xl:table-cell">
+                        {e.destination_ip ?? "—"}
+                      </td>
+                      <td>{e.severity ? <StatusPill status={e.severity} /> : "—"}</td>
+                      <td>{e.processing_status ? <StatusPill status={e.processing_status} dot={false} /> : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DataTable>
+              <div className="mt-3 flex items-center justify-between text-xs">
+                <span className="text-gray-500">
+                  Showing {page * PAGE + 1}–{Math.min(total, (page + 1) * PAGE)} of {total.toLocaleString()}
+                </span>
+                <div className="flex gap-2">
+                  <button className="btn-ghost py-1" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                    Previous
+                  </button>
+                  <button
+                    className="btn-ghost py-1"
+                    disabled={(page + 1) * PAGE >= total}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              title={Object.keys(applied).length > 0 ? "No events match these filters" : "No events yet"}
+              hint={
+                Object.keys(applied).length > 0
+                  ? "Try clearing a filter or widening the time range."
+                  : "Ingest a file or sample on the Ingestion page to populate the explorer."
+              }
+            />
+          )}
+        </div>
+
+        {/* RIGHT (~42%): persistent investigation panel — desktop only */}
+        <div className="hidden lg:col-span-5 lg:block">
+          <div className="surface bg-surface-sheen lg:sticky lg:top-6">
+            <div className="border-b border-base-border px-5 py-3.5">
+              <div className="text-2xs font-semibold uppercase tracking-[0.14em] text-brand">
+                Event Investigation
+              </div>
+            </div>
+            <div className="max-h-[calc(100vh-11rem)] overflow-y-auto p-5">
+              {selected ? (
+                <>
+                  <EventInspectorHeader eventId={selected} onClose={() => select(null)} />
+                  <div className="mt-4">
+                    <EventInspectorContent eventId={selected} />
+                  </div>
+                </>
+              ) : (
+                <EmptyState
+                  icon={SearchCheck}
+                  title="Select an event to investigate"
+                  hint="Click any row on the left to see its normalized fields, security & PII status, pipeline trail, and raw payload here."
+                />
+              )}
             </div>
           </div>
-        </>
-      ) : (
-        <EmptyState
-          title={Object.keys(applied).length > 0 ? "No events match these filters" : "No events yet"}
-          hint={
-            Object.keys(applied).length > 0
-              ? "Try clearing a filter or widening the time range."
-              : "Ingest a file or sample on the Ingestion page to populate the explorer."
-          }
-        />
-      )}
+        </div>
+      </div>
 
-      {selected && <EventDetail eventId={selected} onClose={() => setSelected(null)} />}
+      {/* Mobile / tablet fallback — slide-over inspector instead of the persistent split */}
+      <div className="lg:hidden">
+        {selected && <EventDetail eventId={selected} onClose={() => select(null)} />}
+      </div>
     </div>
   );
 }

@@ -30,6 +30,20 @@ def _prepare_db():
     from app.services.parsing.loader import load_all_parsers
 
     load_all_parsers()
+    from app.core.config import settings
+    if settings.use_mongodb:
+        try:
+            from app.core.mongodb import get_mongo_db
+            db = get_mongo_db()
+            for c in [
+                "normalized_events", "raw_logs", "security_alerts",
+                "processing_jobs", "ingestion_jobs", "security_events",
+                "templates", "template_matches", "compression_records",
+                "compression_benchmarks", "pipeline_runs", "response_simulations",
+            ]:
+                db[c].delete_many({})
+        except Exception:
+            pass
     yield
     try:
         os.unlink(_tmp.name)

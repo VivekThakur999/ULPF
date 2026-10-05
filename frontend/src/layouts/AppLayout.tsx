@@ -122,19 +122,19 @@ export default function AppLayout() {
   return (
     <div className="flex min-h-screen bg-base-bg">
       <aside
-        className={`flex shrink-0 flex-col bg-nav-bg transition-[width] duration-200 ${
-          collapsed ? "w-[64px]" : "w-60"
+        className={`flex shrink-0 flex-col border-r border-nav-border bg-nav-bg transition-[width] duration-200 ${
+          collapsed ? "w-14" : "w-60"
         }`}
       >
         {/* brand */}
-        <div className="flex h-14 items-center gap-2.5 border-b border-nav-border px-4">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand/20">
-            <ShieldCheck className="h-4 w-4 text-blue-300" />
+        <div className="flex h-16 items-center gap-2.5 border-b border-nav-border px-4">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand/10">
+            <ShieldCheck className="h-4 w-4 text-brand" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <div className="text-sm font-semibold tracking-tight text-white">ULPF</div>
-              <div className="truncate text-[10px] uppercase tracking-[0.16em] text-nav-text/90">
+              <div className="text-sm font-semibold tracking-tight text-slate-900">ULPF</div>
+              <div className="truncate text-[10px] uppercase tracking-[0.16em] text-slate-500">
                 Universal Log Pre-processing
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function AppLayout() {
           {NAV_GROUPS.map((group) => (
             <div key={group.title}>
               {!collapsed && (
-                <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-nav-text/80">
+                <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
                   {group.title}
                 </div>
               )}
@@ -160,24 +160,17 @@ export default function AppLayout() {
                       className={({ isActive }) =>
                         `group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
                           isActive
-                            ? "bg-brand/25 text-nav-text-active"
-                            : "text-nav-text hover:bg-white/5 hover:text-nav-text-active"
+                            ? "bg-brand text-white shadow-sm"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                         } ${collapsed ? "justify-center" : ""}`
                       }
                     >
-                      {({ isActive }) => (
-                        <>
-                          {isActive && (
-                            <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r bg-blue-400" />
-                          )}
-                          <Icon className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span className="truncate">{label}</span>}
-                          {!collapsed && to === "/alerts" && (activeAlerts.data?.total ?? 0) > 0 && (
-                            <span className="ml-auto rounded-full bg-red-500/25 px-1.5 text-[10px] font-semibold text-red-300">
-                              {activeAlerts.data!.total}
-                            </span>
-                          )}
-                        </>
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="truncate">{label}</span>}
+                      {!collapsed && to === "/alerts" && (activeAlerts.data?.total ?? 0) > 0 && (
+                        <span className="ml-auto rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white">
+                          {activeAlerts.data!.total}
+                        </span>
                       )}
                     </NavLink>
                   );
@@ -201,18 +194,18 @@ export default function AppLayout() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
               )}
               <span
-                className={`relative inline-flex h-2 w-2 rounded-full ${operational ? "bg-emerald-400" : "bg-red-400"}`}
+                className={`relative inline-flex h-2 w-2 rounded-full ${operational ? "bg-emerald-500" : "bg-red-500"}`}
               />
             </span>
             {!collapsed && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-nav-text-active">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-700">
                 {operational ? "System operational" : "Backend unreachable"}
               </span>
             )}
           </div>
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg py-1.5 text-2xs font-medium text-nav-text hover:bg-white/5 hover:text-nav-text-active"
+            className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg py-1.5 text-2xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft className={`h-3.5 w-3.5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
@@ -223,7 +216,7 @@ export default function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* top bar */}
-        <header className="glass sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-base-border px-6">
+        <header className="glass sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-base-border px-6">
           <div className="flex items-center gap-2 text-sm">
             <span className="font-semibold text-slate-400">ULPF</span>
             <span className="text-slate-400">/</span>

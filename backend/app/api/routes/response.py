@@ -22,6 +22,39 @@ router = APIRouter()
 
 
 def _load_alert(db: Session, alert_id: str) -> SecurityAlert:
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.alerts import MongoAlertRepository
+
+            mongo_alerts = MongoAlertRepository()
+            doc = mongo_alerts.get_alert(alert_id)
+            if doc:
+                return SecurityAlert(
+                    id=doc["id"],
+                    title=doc.get("title", ""),
+                    severity=doc.get("severity", "medium"),
+                    risk_score=float(doc.get("risk_score", 0.0)),
+                    source=doc.get("source", "correlation-engine"),
+                    rule_key=doc.get("rule_key"),
+                    description=doc.get("description", ""),
+                    reason=doc.get("reason", ""),
+                    risk_breakdown=doc.get("risk_breakdown", {}),
+                    entity=doc.get("entity", {}),
+                    related_event_ids=doc.get("related_event_ids", []),
+                    affected_hosts=doc.get("affected_hosts", []),
+                    recommended_response=doc.get("recommended_response", {}),
+                    status=doc.get("status", "NEW"),
+                    acknowledged_by=doc.get("acknowledged_by"),
+                    resolution_note=doc.get("resolution_note", ""),
+                    dedup_key=doc.get("dedup_key", ""),
+                    ts=doc.get("ts"),
+                    updated_at=doc.get("updated_at"),
+                )
+        except Exception:
+            pass
+
     alert = db.get(SecurityAlert, alert_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -82,6 +115,18 @@ def list_simulations(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    from app.core.config import settings
+
+    if settings.use_mongodb:
+        try:
+            from app.repositories.mongodb.response import MongoResponseRepository
+
+            mongo_resp = MongoResponseRepository()
+            items = mongo_resp.list_simulations(alert_id=alert_id, limit=limit)
+            return [SimulationRecordOut.model_validate(r) for r in items]
+        except Exception:
+            pass
+
     stmt = select(ResponseSimulation).order_by(desc(ResponseSimulation.ts)).limit(limit)
     if alert_id:
         stmt = stmt.where(ResponseSimulation.alert_id == alert_id)

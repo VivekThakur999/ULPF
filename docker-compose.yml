@@ -1,6 +1,23 @@
 services:
+  mongo:
+    image: mongodb/mongodb-community-server:8.0-ubuntu2204
+    container_name: ulpf-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   db:
     image: postgres:16-alpine
+    container_name: ulpf-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ulpf}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ulpf}
@@ -13,21 +30,34 @@ services:
       timeout: 3s
       retries: 10
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   backend:
     build: ./backend
+    container_name: ulpf-backend
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
-      DEBUG: ${DEBUG:-true}
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-ulpf}:${POSTGRES_PASSWORD:-ulpf}@db:5432/${POSTGRES_DB:-ulpf}
+      MONGODB_URI: mongodb://mongo:27017/ulpf_telemetry
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-ulpf_telemetry}
+      USE_MONGODB: "true"
+      MONGODB_REQUIRE_LIVE: ${MONGODB_REQUIRE_LIVE:-true}
+      MONGODB_ALLOW_MOCK: ${MONGODB_ALLOW_MOCK:-false}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      AUTH_MODE: ${AUTH_MODE:-auto}
       SECRET_KEY: ${SECRET_KEY:-CHANGE_ME_dev_only_insecure}
       PII_HMAC_KEY: ${PII_HMAC_KEY:-CHANGE_ME_dev_only_pii_key}
       PII_DEFAULT_MODE: ${PII_DEFAULT_MODE:-DETERMINISTIC_HASH}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080,http://localhost:3000}
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-admin@ulpf.io}
       FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-ChangeMe!123}
       AI_PROVIDER: ${AI_PROVIDER:-local_template}
@@ -39,11 +69,14 @@ services:
 
   frontend:
     build: ./frontend
+    container_name: ulpf-frontend
+    restart: unless-stopped
     depends_on:
       - backend
     ports:
       - "8080:80"
 
 volumes:
+  mongodata:
   pgdata:
   uploads:

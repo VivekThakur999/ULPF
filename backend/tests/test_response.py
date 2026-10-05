@@ -126,6 +126,15 @@ def _wait(client, headers, job_id):
 @pytest.fixture(scope="module")
 def alert_id(client_module, analyst_headers_module):
     client, headers = client_module, analyst_headers_module
+    from app.core.config import settings
+    if settings.use_mongodb:
+        try:
+            from app.core.mongodb import get_mongo_db
+            db = get_mongo_db()
+            for c in ["normalized_events", "raw_logs", "security_alerts", "ingestion_jobs", "security_events"]:
+                db[c].delete_many({})
+        except Exception:
+            pass
     for f in ["linux.log", "firewall.log", "application.jsonl", "windows.jsonl"]:
         r = client.post("/api/ingestion/upload", headers=headers,
                         files={"file": (f, (_SCEN / f).read_bytes(), "text/plain")},
