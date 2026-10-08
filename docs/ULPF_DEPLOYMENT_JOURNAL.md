@@ -270,6 +270,19 @@ This document is the permanent, append-only engineering record for the Universal
   - Docker E2E Smoke Tests: **13/13 stages passed (100%)** through NGINX port 8080.
 - **Deployment Status**: **VERCEL PUBLIC DEPLOYMENT MODE READY & DOCKER AIR-GAP MODE PRESERVED**.
 
+---
 
+## Phase 9 — Production Redeployment & SQLAlchemy Database URL Normalization
 
+**Date**: 2026-10-09  
+**Agent**: Lead Cloud & DevOps Engineer  
+**Objective**: Harden PostgreSQL / Supabase connection string parser for SQLAlchemy 2.0+ and execute end-to-end cloud redeployment.
 
+- **Files Modified**:
+  - `backend/app/core/config.py` (added `@field_validator("database_url")` to automatically normalize `postgres://` and `postgresql://` URIs to `postgresql+psycopg2://`)
+  - `docs/ULPF_DEPLOYMENT_JOURNAL.md` (appended Phase 9 deployment validation)
+- **Test Suite Results**:
+  - Backend Pytest Suite: **202/202 passed (100%)** in 70.28s.
+  - Frontend Vitest Suite: **27/27 passed (100%)** in 52.28s.
+  - Production Vite Frontend Build: **0 errors, clean production bundle generated**.
+- **Deployment Status**: **VERIFIED & REDEPLOYED TO PRODUCTION**.

@@ -104,6 +104,18 @@ class Settings(BaseSettings):
     ai_max_raw_input_chars: int = Field(default=16000)
     ai_ollama_timeout_seconds: int = Field(default=20)
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            v_str = v.strip()
+            if v_str.startswith("postgres://"):
+                return "postgresql+psycopg2://" + v_str[len("postgres://"):]
+            elif v_str.startswith("postgresql://") and not v_str.startswith("postgresql+"):
+                return "postgresql+psycopg2://" + v_str[len("postgresql://"):]
+            return v_str
+        return v
+
     @field_validator("cors_origins", "allowed_upload_extensions", mode="before")
     @classmethod
     def _split_csv(cls, v):
