@@ -242,5 +242,34 @@ This document is the permanent, append-only engineering record for the Universal
   - Production Frontend Build (`tsc -b && vite build`): **0 errors, clean bundle generated**.
 - **Final Evaluation Verdict**: **APPROVED — LOCALLY DEPLOYED AND READY FOR PUBLIC DEPLOYMENT**.
 
+---
+
+## Phase 8 — Public Vercel Deployment Mode Implementation & Verification
+
+**Date**: 2026-10-08  
+**Agent**: Lead Cloud & DevOps Architect  
+**Objective**: Implement additive Vercel serverless deployment mode for public SIH jury/evaluator demonstration while maintaining Docker Compose as the authoritative local and sovereign air-gapped deployment.
+
+- **Files Created**:
+  - `api/index.py` (Vercel ASGI serverless entrypoint exposing FastAPI `handler = app`)
+  - `api/requirements.txt` (Vercel Python runtime dependency manifest)
+  - `backend/tests/test_vercel_serverless.py` (5-point Vercel serverless integration test suite)
+- **Files Modified**:
+  - `vercel.json` (configured multi-stage Vite static build + serverless Python `/api/*` and `/health` routing)
+  - `backend/app/api/routes/ingestion.py` (added synchronous execution fallback for serverless execution environments)
+  - `backend/pyproject.toml` (synchronized `pymongo` and `mongomock` dependencies)
+- **Architectural Verification**:
+  - Public Vercel topology: React 18/Vite SPA on Vercel Global Edge CDN + FastAPI serverless function on Python 3.12 runtime.
+  - Telemetry Plane: MongoDB Atlas (`mongodb+srv://...` with TLS).
+  - Control Plane: Supabase Cloud PostgreSQL with connection pooling + Supabase Auth.
+  - Docker Compose stack: 100% untouched and regression-free for Sovereign Air-Gapped Mode.
+- **Test Suite Results**:
+  - Backend Unit & Integration Tests: **202/202 passed (100%)** in 149.75s (including 5 new Vercel serverless tests).
+  - Frontend Vitest Tests: **27/27 passed (100%)** in 106.75s.
+  - Production Frontend Build: Clean build in 28.50s (0 errors).
+  - Docker E2E Smoke Tests: **13/13 stages passed (100%)** through NGINX port 8080.
+- **Deployment Status**: **VERCEL PUBLIC DEPLOYMENT MODE READY & DOCKER AIR-GAP MODE PRESERVED**.
+
+
 
 

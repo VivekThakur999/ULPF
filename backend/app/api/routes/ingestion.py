@@ -61,6 +61,7 @@ def _create_and_dispatch(
     db: Session, bg: BackgroundTasks, *, data: bytes, filename: str,
     source_name: str, declared_format: str | None, user: User,
     source_id: str | None = None, category: str = "generic",
+    sync: bool = False,
 ) -> ProcessingJob:
     job = ProcessingJob(
         source_id=source_id,
@@ -75,7 +76,11 @@ def _create_and_dispatch(
     db.refresh(job)
     audit.record(db, action="ingestion.job_created", actor=user, target_type="job",
                  target_id=job.id, detail=f"file={filename} bytes={len(data)}")
-    bg.add_task(_run_job, job.id, data)
+    if sync or os.environ.get("VERCEL") or os.environ.get("EXECUTION_ENV") == "serverless":
+        _run_job(job.id, data)
+        db.refresh(job)
+    else:
+        bg.add_task(_run_job, job.id, data)
     return job
 
 
