@@ -3,10 +3,26 @@
 **Smart India Hackathon 2026** · Problem Statement **SIH26156 — Universal Log Pre-processing Framework**
 · Organisation: **National Technical Research Organisation (NTRO)** · Category: Software
 
-[![Backend Tests](https://img.shields.io/badge/Backend%20Pytest-197%2F197%20Passed-brightgreen)](file:///backend/tests)
+[![Live Production](https://img.shields.io/badge/Production%20Live-ulpf10.vercel.app-red?logo=vercel)](https://ulpf10.vercel.app)
+[![Backend Tests](https://img.shields.io/badge/Backend%20Pytest-202%2F202%20Passed-brightgreen)](file:///backend/tests)
 [![Frontend Tests](https://img.shields.io/badge/Frontend%20Vitest-27%2F27%20Passed-brightgreen)](file:///frontend/src)
 [![MongoDB Ingestion](https://img.shields.io/badge/MongoDB%20Write-24%2C027%20writes%2Fsec-blue)](docs/ULPF_PROJECT_CONTEXT.md)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+---
+
+## Live Cloud Deployment & Demo Access
+
+- **Live Production URL**: [https://ulpf10.vercel.app](https://ulpf10.vercel.app)
+- **Live Health API**: [https://ulpf10.vercel.app/health](https://ulpf10.vercel.app/health)
+
+### 1-Click Demo Persona Credentials
+The live login page features a red & white themed 1-click persona switcher:
+| Persona | Email | Default Password | Role & Permissions |
+|---------|-------|------------------|-------------------|
+| **Administrator** | `admin@ulpf.io` | `ChangeMe!123` | Full system control, RBAC management, parser pack creation, audit log access |
+| **Security Analyst** | `analyst@ulpf.io` | `ChangeMe!123` | Log ingestion, parser validation, incident triage, response simulation |
+| **SOC Viewer** | `viewer@ulpf.io` | `ChangeMe!123` | Read-only access to Command Center, Log Explorer, and analytics charts |
 
 ---
 
@@ -36,7 +52,7 @@ RAW HETEROGENEOUS LOGS (Firewall, Auth, Web, App, Syslog, JSON, CEF)
 6. UNIVERSAL NORMALIZATION (Standardized Universal Event Schema v1.0.0)
       │
       ▼
-7. DUAL-PLANE STORAGE (MongoDB 8.0 Telemetry + PostgreSQL 16 Control Plane)
+7. DUAL-PLANE STORAGE (MongoDB Atlas / 8.0 Telemetry + Supabase / PostgreSQL 16 Control Plane)
       │
       ├───────────────────────────────┼───────────────────────────────┐
       ▼                               ▼                               ▼
@@ -59,10 +75,10 @@ National cyber defense perimeters and enterprise SOCs receive terabytes of logs 
 ## Key Technical Innovations
 
 1. **Dual Storage Architecture**:
-   - **Data Plane (MongoDB 8.0)**: Dedicated to high-volume telemetry (`raw_logs`, `normalized_events`, `security_alerts`, `templates`, `compression_records`). Benchmarked at **24,027.9 events/sec**.
-   - **Control Plane (PostgreSQL 16 / Supabase)**: Dedicated to RBAC identity (`app_users`, `roles`), audit logs, security rules, PII policies, and parser metadata.
+   - **Data Plane (MongoDB Atlas / MongoDB 8.0)**: Dedicated to high-volume telemetry (`raw_logs`, `normalized_events`, `security_alerts`, `templates`, `compression_records`). Benchmarked at **24,027.9 events/sec**.
+   - **Control Plane (Supabase Cloud / PostgreSQL 16)**: Dedicated to RBAC identity (`app_users`, `roles`), audit logs, security rules, PII policies, and parser metadata.
 2. **Sovereign Dual-Mode Deployment**:
-   - **Connected Cloud Mode**: Uses Supabase Cloud for Identity/RBAC with local/cloud MongoDB 8.0.
+   - **Connected Cloud Mode**: Uses Supabase Cloud for Identity/RBAC with MongoDB Atlas / Cloud for Telemetry.
    - **Sovereign Air-Gapped Mode**: 100% Offline with local Argon2id authentication, local PostgreSQL 16, local MongoDB 8.0, and offline local AI assistance. Zero outbound internet calls.
 3. **AST-Hardened Security Shield**: Zero dynamic code execution (`no eval()`, `no exec()`, `no subprocess`). Automatically categorizes and quarantines weaponized payloads.
 4. **Deterministic Privacy-Preserving Pseudonymization**: Keyed HMAC-SHA256 tokenization allows cross-source correlation (`IP_9f82...`) without exposing raw network secrets.
@@ -78,9 +94,9 @@ National cyber defense perimeters and enterprise SOCs receive terabytes of logs 
 |-------|-------|---------|
 | **Frontend UI** | React 18, TypeScript, Vite, Tailwind CSS, Monaco Editor, Recharts | SOC Command Center, Log Explorer, Pipeline Debugger |
 | **Backend API** | Python 3.12, FastAPI, Pydantic v2, PyMongo, SQLAlchemy 2 | Stateless REST Engine, Pipeline Ingestion, Security Engine |
-| **Telemetry Store** | MongoDB Community Server 8.0 | High-Volume Document Storage for Raw Logs & Events |
-| **Control Store** | PostgreSQL 16 / Supabase Cloud | Identity, RBAC, Security Rules, PII Policies, Audit Logs |
-| **Containerization** | Docker, Docker Compose, NGINX | Production-Hardened Multi-Container Architecture |
+| **Telemetry Store** | MongoDB Atlas / MongoDB 8.0 | High-Volume Document Storage for Raw Logs & Events |
+| **Control Store** | Supabase Cloud / PostgreSQL 16 | Identity, RBAC, Security Rules, PII Policies, Audit Logs |
+| **Hosting & Infra** | Vercel Serverless / Docker Compose | Serverless Edge Deployment & Air-Gapped Multi-Container Architecture |
 
 ---
 
@@ -102,7 +118,7 @@ National cyber defense perimeters and enterprise SOCs receive terabytes of logs 
 
 ## Quickstart & Deployment
 
-### Option A — Full Docker Stack (Recommended)
+### Option A — Full Docker Stack (Recommended Local Setup)
 
 ```bash
 # 1. Clone repository & configure environment
@@ -120,7 +136,7 @@ curl http://localhost:8000/health
 
 - **Frontend SOC Console**: [http://localhost:8080](http://localhost:8080)
 - **Backend REST API & Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Default Seeded Admin**: `admin@ulpf.io` / `AdminPass!123`
+- **Default Seeded Admin**: `admin@ulpf.io` / `ChangeMe!123`
 
 ---
 
