@@ -4,7 +4,6 @@ const TOKEN_KEY = "ulpf.token";
 
 export const api = axios.create({
   baseURL: "/api",
-  headers: { "Content-Type": "application/json" },
 });
 
 export function getToken(): string | null {
