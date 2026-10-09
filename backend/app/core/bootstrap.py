@@ -58,19 +58,24 @@ def _seed_roles(db: Session) -> None:
     db.commit()
 
 
-def _seed_admin(db: Session) -> None:
-    email = settings.first_admin_email.lower()
-    if db.query(User).filter(User.email == email).first():
-        return
-    db.add(User(
-        email=email,
-        full_name="ULPF Administrator",
-        password_hash=hash_password(settings.first_admin_password),
-        role_name=ROLE_ADMIN,
-        is_active=True,
-    ))
+def _seed_users(db: Session) -> None:
+    users_to_seed = [
+        (settings.first_admin_email.lower(), "ULPF Administrator", ROLE_ADMIN),
+        ("analyst@ulpf.io", "ULPF SOC Analyst", ROLE_ANALYST),
+        ("viewer@ulpf.io", "ULPF Auditor / Viewer", ROLE_VIEWER),
+    ]
+    for email, name, role in users_to_seed:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            db.add(User(
+                email=email,
+                full_name=name,
+                password_hash=hash_password(settings.first_admin_password),
+                role_name=role,
+                is_active=True,
+            ))
+            log.info("Seeded user: %s (%s)", email, role)
     db.commit()
-    log.info("Seeded first admin user: %s", email)
 
 
 def _seed_pii(db: Session) -> None:
@@ -99,7 +104,7 @@ def bootstrap() -> None:
     db = SessionLocal()
     try:
         _seed_roles(db)
-        _seed_admin(db)
+        _seed_users(db)
         _seed_pii(db)
         _seed_rules(db)
     finally:
