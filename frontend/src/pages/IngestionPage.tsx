@@ -134,7 +134,10 @@ function UploadCard({ onError, onDone }: { onError: (s: string) => void; onDone:
   const [sourceName, setSourceName] = useState("upload");
   const m = useMutation({
     mutationFn: (file: File) => uploadLog(file, sourceName),
-    onSuccess: onDone,
+    onSuccess: () => {
+      if (fileRef.current) fileRef.current.value = "";
+      onDone();
+    },
     onError: (e) => onError(apiError(e)),
   });
   return (
@@ -148,10 +151,13 @@ function UploadCard({ onError, onDone }: { onError: (s: string) => void; onDone:
         ref={fileRef}
         type="file"
         accept=".log,.txt,.json,.jsonl,.ndjson,.csv,.syslog"
-        className="block w-full text-xs text-gray-400 file:mr-3 file:rounded file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-white"
+        className="block w-full text-xs text-gray-400 file:mr-3 file:rounded file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-white cursor-pointer"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) m.mutate(f);
+          if (f) {
+            onError("");
+            m.mutate(f);
+          }
         }}
       />
       {m.isPending && <p className="mt-2 text-xs text-gray-400">Uploading…</p>}

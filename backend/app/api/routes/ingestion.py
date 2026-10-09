@@ -88,19 +88,32 @@ def _create_and_dispatch(
 async def upload(
     request: Request,
     background: BackgroundTasks,
-    file: UploadFile = File(...),
-    source_name: str = Form("upload"),
-    declared_format: str | None = Form(None),
+    file: UploadFile | None = File(default=None),
+    source_name: str = Form(default="upload"),
+    declared_format: str | None = Form(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(require_analyst),
 ):
+    if file is None:
+        try:
+            form = await request.form()
+            if "file" in form and hasattr(form["file"], "read"):
+                file = form["file"]  # type: ignore[assignment]
+                source_name = str(form.get("source_name") or source_name or "upload")
+                declared_format = form.get("declared_format") or declared_format
+        except Exception:
+            pass
+
+    if file is None:
+        raise HTTPException(status_code=422, detail="Please select a valid log file to upload.")
+
     data = await file.read()
     _validate_upload(file.filename or "upload.log", len(data))
     if not data.strip():
         raise HTTPException(status_code=422, detail="File is empty")
     job = _create_and_dispatch(
         db, background, data=data, filename=file.filename or "upload.log",
-        source_name=source_name, declared_format=declared_format, user=user,
+        source_name=source_name or "upload", declared_format=declared_format, user=user,
     )
     return job
 

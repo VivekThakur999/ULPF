@@ -57,12 +57,10 @@ export const getJobRecords = (id: string, params?: { status?: string; limit?: nu
 export const uploadLog = (file: File, sourceName: string, declaredFormat?: string) => {
   const fd = new FormData();
   fd.append("file", file);
-  fd.append("source_name", sourceName);
+  fd.append("source_name", sourceName || "upload");
   if (declaredFormat) fd.append("declared_format", declaredFormat);
   return api
-    .post<ProcessingJob>("/ingestion/upload", fd, {
-      headers: { "Content-Type": undefined },
-    })
+    .post<ProcessingJob>("/ingestion/upload", fd)
     .then((r) => r.data);
 };
 

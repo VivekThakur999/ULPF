@@ -44,7 +44,17 @@ export function apiError(e: unknown): string {
   if (axios.isAxiosError(e)) {
     const d = e.response?.data as { detail?: unknown } | undefined;
     if (typeof d?.detail === "string") return d.detail;
-    if (Array.isArray(d?.detail)) return d.detail.map((x: any) => x.msg).join("; ");
+    if (Array.isArray(d?.detail)) {
+      return d.detail
+        .map((x: any) => {
+          const loc = Array.isArray(x.loc) ? x.loc.filter((p: string) => p !== "body").join(".") : "";
+          return loc ? `${loc}: ${x.msg}` : (x.msg || JSON.stringify(x));
+        })
+        .join("; ");
+    }
+    if (typeof d === "object" && d !== null) {
+      if ("message" in d && typeof (d as any).message === "string") return (d as any).message;
+    }
     return e.message;
   }
   return String(e);

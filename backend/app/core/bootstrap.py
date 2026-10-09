@@ -18,7 +18,7 @@ from app.models import (  # noqa: F401  (import registers all tables)
     SecurityRule,
     User,
 )
-from app.models.user import ALL_ROLES, ROLE_ADMIN
+from app.models.user import ALL_ROLES, ROLE_ADMIN, ROLE_ANALYST, ROLE_VIEWER
 
 log = get_logger("bootstrap")
 
