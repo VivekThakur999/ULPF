@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.core.logging import get_logger
+from app.models.common import new_uuid
 from app.models.event import NormalizedEvent
 from app.models.ingestion import (
     JOB_COMPLETED,
@@ -221,12 +222,10 @@ def process_job(db: Session, job: ProcessingJob, data: bytes) -> ProcessingJob:
                 if mongo_raw_pending:
                     mongo_raw_pending[-1]["status"] = RAW_STATUS_PROCESSED
                 ev = ctx.event
-                ev_model = _to_model(ev, job_id=job.id, raw_log_id=raw.id)
-                db.add(ev_model)
-                db.flush()
+                ev_id = new_uuid()
                 if mongo_events is not None:
                     mongo_event_pending.append({
-                        "_id": ev_model.id,
+                        "_id": ev_id,
                         "job_id": job.id,
                         "raw_log_id": raw.id,
                         "timestamp": ev.timestamp,
@@ -262,7 +261,13 @@ def process_job(db: Session, job: ProcessingJob, data: bytes) -> ProcessingJob:
                         "confidence": float(ev.confidence or 0.0),
                         "template_id": ev.template_id,
                     })
+                else:
+                    ev_model = _to_model(ev, job_id=job.id, raw_log_id=raw.id)
+                    db.add(ev_model)
+                    db.flush()
 
+            if mongo_ingest is None:
+                db.add(raw)
             pending.append(raw)
             if len(pending) >= _COMMIT_EVERY:
                 _flush_progress(db, job, total, processed, invalid, duplicates,
@@ -277,6 +282,7 @@ def process_job(db: Session, job: ProcessingJob, data: bytes) -> ProcessingJob:
                     mongo_alerts.insert_security_events_bulk(mongo_sec_pending)
                     mongo_sec_pending.clear()
                 pending.clear()
+
 
         # Flush any remaining items
         if mongo_ingest is not None and mongo_raw_pending:

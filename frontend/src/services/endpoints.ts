@@ -60,9 +60,7 @@ export const uploadLog = (file: File, sourceName: string, declaredFormat?: strin
   fd.append("source_name", sourceName);
   if (declaredFormat) fd.append("declared_format", declaredFormat);
   return api
-    .post<ProcessingJob>("/ingestion/upload", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })
+    .post<ProcessingJob>("/ingestion/upload", fd)
     .then((r) => r.data);
 };
 

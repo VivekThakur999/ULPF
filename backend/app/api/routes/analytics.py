@@ -81,10 +81,15 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
                 bands[b] += 1
 
             success_rate = round(processed / total_raw * 100, 1) if total_raw else 0.0
-            repo = EventRepository(db)
-            timeseries = repo.timeseries(EventQuery(limit=1), bucket="hour")
+            source_facets = mongo_events.group_count("source", limit=20)
+            timeseries = mongo_events.timeseries(EventQuery(limit=1), bucket="hour")
 
-            configured = db.execute(select(LogSource)).scalars().all()
+            configured = []
+            try:
+                configured = db.execute(select(LogSource)).scalars().all()
+            except Exception:
+                db.rollback()
+
             seen_pipeline = [
                 {"$match": {"source": {"$exists": True, "$ne": None}}},
                 {"$group": {"_id": "$source", "events": {"$sum": 1}, "last": {"$max": "$ingested_at"}}},
@@ -94,7 +99,7 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
                 for r in mongo_events.collection.aggregate(seen_pipeline):
                     seen_map[str(r["_id"])] = {"events": r["events"], "last": r.get("last")}
             except Exception:
-                for f in mongo_events.group_count("source", limit=100):
+                for f in source_facets:
                     seen_map[f["label"]] = {"events": f["value"], "last": datetime.now(timezone.utc)}
 
             source_status = []
@@ -149,7 +154,7 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
                 },
                 "charts": {
                     "logs_by_source": source_facets[:15],
-                    "logs_by_format": _group_count(db, ProcessingJob.detected_format),
+                    "logs_by_format": mongo_events.group_count("parser"),
                     "events_by_severity": mongo_events.group_count("severity"),
                     "events_by_type": mongo_events.group_count("event_type"),
                     "events_over_time": timeseries,
@@ -172,7 +177,8 @@ def overview(db: Session = Depends(get_db), _: User = Depends(get_current_user))
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
         except Exception:
-            pass
+            db.rollback()
+
 
     total_raw = _count(db, RawLog)
     processed = _count(db, RawLog, RawLog.status == RAW_STATUS_PROCESSED)
@@ -301,10 +307,16 @@ def pipeline_overview(db: Session = Depends(get_db), _: User = Depends(get_curre
             ok_events = mongo_events.count({"processing_status": "ok"})
             partial_events = mongo_events.count({"processing_status": "partial"})
             error_events = mongo_events.count({"processing_status": "error"})
-            pii_protected = mongo_events.count({"pii_protected": True})
-            pii_row = db.get(PiiSetting, "default")
+            pii_mode = "DETERMINISTIC_HASH"
+            sources_count = 0
+            try:
+                pii_row = db.get(PiiSetting, "default")
+                if pii_row:
+                    pii_mode = pii_row.mode
+                sources_count = _count(db, LogSource)
+            except Exception:
+                db.rollback()
 
-            sources_count = _count(db, LogSource)
             jobs_running = mongo_ingest.count_jobs({"status": "RUNNING"})
 
             alerts_total = mongo_alerts.count_alerts()
